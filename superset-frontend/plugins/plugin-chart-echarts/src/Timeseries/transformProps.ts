@@ -61,6 +61,7 @@ import {
   EchartsTimeseriesSeriesType,
   OrientationType,
   TimeseriesChartTransformedProps,
+  ValueLabelType,
 } from './types';
 import { DEFAULT_FORM_DATA } from './constants';
 import {
@@ -239,6 +240,7 @@ export default function transformProps(
     seriesType,
     showLegend,
     showValue,
+    valueLabelType,
     colorByPrimaryAxis,
     sliceId,
     sortSeriesType,
@@ -276,6 +278,14 @@ export default function transformProps(
   }: EchartsTimeseriesFormData = { ...DEFAULT_FORM_DATA, ...formData };
 
   const refs: Refs = {};
+  const isBar = seriesType === EchartsTimeseriesSeriesType.Bar;
+  const resolvedValueLabelType = isBar
+    ? (valueLabelType ??
+      (showValue ? ValueLabelType.Value : ValueLabelType.None))
+    : undefined;
+  const resolvedShowValue = isBar
+    ? resolvedValueLabelType !== ValueLabelType.None
+    : showValue;
   const groupBy = ensureIsArray(groupby);
   const labelMap: { [key: string]: string[] } = Object.entries(
     label_map,
@@ -353,6 +363,65 @@ export default function transformProps(
   const percentFormatter = forcePercentFormatter
     ? getPercentFormatter(yAxisFormat)
     : getPercentFormatter(NumberFormats.PERCENT_2_POINT);
+  const shouldShowPercentageLabels =
+    isBar &&
+    !forcePercentFormatter &&
+    [ValueLabelType.Percentage, ValueLabelType.ValueAndPercentage].includes(
+      resolvedValueLabelType ?? ValueLabelType.None,
+    );
+  const percentLabelFormatter = shouldShowPercentageLabels
+    ? getPercentFormatter(NumberFormats.PERCENT)
+    : undefined;
+  const percentTotalValues = shouldShowPercentageLabels
+    ? (() => {
+        if (stack) {
+          return sortedTotalValues.map(value =>
+            typeof value === 'number' ? value : 0,
+          );
+        }
+
+        if (rawSeries.length > 1) {
+          const totals: number[] = [];
+          rawSeries.forEach(entry => {
+            const entryId = String(entry.id ?? entry.name ?? '');
+            if (entryId && legendState && !legendState[entryId]) {
+              return;
+            }
+            if (!Array.isArray(entry.data)) {
+              return;
+            }
+
+            entry.data.forEach((datum, dataIndex) => {
+              if (!Array.isArray(datum)) {
+                return;
+              }
+              const numericValue = isHorizontal ? datum[0] : datum[1];
+              if (typeof numericValue === 'number') {
+                totals[dataIndex] = (totals[dataIndex] || 0) + numericValue;
+              }
+            });
+          });
+          return totals;
+        }
+
+        const firstSeriesData = Array.isArray(rawSeries[0]?.data)
+          ? rawSeries[0].data
+          : [];
+        const grandTotal = firstSeriesData.reduce((total, datum) => {
+          if (!Array.isArray(datum)) {
+            return total;
+          }
+          const numericValue = isHorizontal ? datum[0] : datum[1];
+          return typeof numericValue === 'number'
+            ? total + numericValue
+            : total;
+        }, 0);
+        return Array.from(
+          { length: firstSeriesData.length },
+          () => grandTotal,
+        );
+      })()
+    : undefined;
 
   // Resolve currency for AUTO mode (backend detection takes precedence)
   const resolvedCurrency = resolveAutoCurrency(
@@ -494,7 +563,10 @@ export default function transformProps(
               metrics,
               labelMap?.[seriesName]?.[0],
             ) ?? defaultFormatter),
-        showValue,
+        showValue: resolvedShowValue,
+        valueLabelType: resolvedValueLabelType,
+        percentFormatter: percentLabelFormatter,
+        percentTotalValues,
         onlyTotal,
         totalStackedValues: sortedTotalValues,
         showValueIndexes,
@@ -993,7 +1065,7 @@ export default function transformProps(
     [xAxis, yAxis] = [yAxis, xAxis];
     [padding.bottom, padding.left] = [padding.left, padding.bottom];
     // Increase right padding for horizontal bar charts to ensure value labels are visible
-    if (seriesType === EchartsTimeseriesSeriesType.Bar && showValue) {
+    if (seriesType === EchartsTimeseriesSeriesType.Bar && resolvedShowValue) {
       padding.right = Math.max(
         padding.right || 0,
         TIMESERIES_CONSTANTS.horizontalBarLabelRightPadding,

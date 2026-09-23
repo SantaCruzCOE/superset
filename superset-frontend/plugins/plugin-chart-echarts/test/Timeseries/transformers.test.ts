@@ -16,11 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { CategoricalColorScale, ChartProps } from '@superset-ui/core';
+import {
+  CategoricalColorScale,
+  ChartProps,
+  getNumberFormatter,
+  NumberFormats,
+} from '@superset-ui/core';
 import { GenericDataType } from '@apache-superset/core/common';
 import { supersetTheme } from '@apache-superset/core/theme';
 import type { SeriesOption } from 'echarts';
-import { EchartsTimeseriesSeriesType } from '../../src';
+import { EchartsTimeseriesSeriesType, ValueLabelType } from '../../src';
 import { TIMESERIES_CONSTANTS } from '../../src/constants';
 import { LegendOrientation } from '../../src/types';
 import {
@@ -39,6 +44,36 @@ const mockColorScale = jest.fn(
 
 describe('transformSeries', () => {
   const series = { name: 'test-series' };
+  const valueFormatter = getNumberFormatter(NumberFormats.INTEGER);
+  const percentFormatter = getNumberFormatter(NumberFormats.PERCENT);
+
+  const createBarSeries = (opts: Record<string, unknown> = {}) =>
+    transformSeries(
+      { ...series, data: [[0, 17]] },
+      mockColorScale,
+      'test-key',
+      {
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        showValue: true,
+        formatter: valueFormatter,
+        timeShiftColor: false,
+        stack: false,
+        isHorizontal: false,
+        ...opts,
+      },
+    ) as any;
+
+  const formatFirstLabel = (
+    transformedSeries: any,
+    overrides: Record<string, unknown> = {},
+  ) =>
+    transformedSeries.label.formatter({
+      value: [0, 17],
+      dataIndex: 0,
+      seriesIndex: 0,
+      seriesName: 'test-series',
+      ...overrides,
+    });
 
   test('should use the colorScaleKey if timeShiftColor is enabled', () => {
     const opts = {
@@ -120,6 +155,59 @@ describe('transformSeries', () => {
 
     // OpacityEnum.NonTransparent = 1 (not dimmed)
     expect((result as any).itemStyle.opacity).toBe(1);
+  });
+
+  test.each([
+    [ValueLabelType.None, ''],
+    [ValueLabelType.Value, '17'],
+    [ValueLabelType.Percentage, '33%'],
+    [ValueLabelType.ValueAndPercentage, '17 (33%)'],
+  ])('formats the %s value label mode', (valueLabelType, expected) => {
+    const result = createBarSeries({
+      valueLabelType,
+      percentFormatter,
+      percentTotalValues: [51],
+    });
+
+    expect(formatFirstLabel(result)).toBe(expected);
+  });
+
+  test('formats horizontal bar labels from the numeric coordinate', () => {
+    const result = createBarSeries({
+      valueLabelType: ValueLabelType.ValueAndPercentage,
+      percentFormatter,
+      percentTotalValues: [20],
+      isHorizontal: true,
+    });
+
+    expect(formatFirstLabel(result, { value: [5, 0] })).toBe('5 (25%)');
+  });
+
+  test('does not label hidden legend series or non-numeric values', () => {
+    const hiddenResult = createBarSeries({
+      valueLabelType: ValueLabelType.Value,
+      legendState: { 'test-series': false },
+    });
+    const nonNumericResult = createBarSeries({
+      valueLabelType: ValueLabelType.Value,
+    });
+
+    expect(formatFirstLabel(hiddenResult)).toBe('');
+    expect(formatFirstLabel(nonNumericResult, { value: [0, null] })).toBe('');
+  });
+
+  test('formats a stacked total as value and 100 percent', () => {
+    const result = createBarSeries({
+      valueLabelType: ValueLabelType.ValueAndPercentage,
+      percentFormatter,
+      percentTotalValues: [51],
+      stack: true,
+      onlyTotal: true,
+      totalStackedValues: [51],
+      showValueIndexes: [0],
+    });
+
+    expect(formatFirstLabel(result)).toBe('51 (100%)');
   });
 });
 

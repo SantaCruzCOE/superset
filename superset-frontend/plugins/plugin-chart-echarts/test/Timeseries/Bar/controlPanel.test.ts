@@ -23,7 +23,7 @@ import {
   StackControlOptionsWithoutStream,
   StackControlsValue,
 } from '../../../src/constants';
-import { OrientationType } from '../../../src/Timeseries/types';
+import { OrientationType, ValueLabelType } from '../../../src/Timeseries/types';
 
 const config = controlPanel;
 
@@ -130,6 +130,79 @@ test('should have proper form data overrides', () => {
 test('should include stack control in the panel', () => {
   const stackControl = getControl('stack');
   expect(stackControl).toBeDefined();
+});
+
+describe('value label controls', () => {
+  const valueLabelTypeControl: any = getControl('value_label_type');
+  const onlyTotalControl: any = getControl('only_total');
+  const percentageThresholdControl: any = getControl('percentage_threshold');
+
+  test('replaces the legacy show value checkbox with all supported modes', () => {
+    expect(getControl('show_value')).toBeNull();
+    expect(valueLabelTypeControl).toBeDefined();
+    expect(valueLabelTypeControl.config.default).toBe(ValueLabelType.None);
+    expect(
+      valueLabelTypeControl.config.choices.map(([value]: [string]) => value),
+    ).toEqual([
+      ValueLabelType.None,
+      ValueLabelType.Value,
+      ValueLabelType.Percentage,
+      ValueLabelType.ValueAndPercentage,
+    ]);
+  });
+
+  test.each([
+    [{ show_value: true }, ValueLabelType.Value],
+    [{ showValue: true }, ValueLabelType.Value],
+    [{ show_value: false }, ValueLabelType.None],
+    [{}, ValueLabelType.None],
+  ])('maps legacy form data %p to %s', (formData, expected) => {
+    expect(
+      valueLabelTypeControl.config.mapStateToProps({ form_data: formData }),
+    ).toEqual({ value: expected });
+  });
+
+  test.each([
+    { value_label_type: ValueLabelType.Percentage, show_value: true },
+    { valueLabelType: ValueLabelType.ValueAndPercentage, showValue: true },
+  ])('does not overwrite an explicit value label mode', formData => {
+    expect(
+      valueLabelTypeControl.config.mapStateToProps({ form_data: formData }),
+    ).toEqual({});
+  });
+
+  test('shows stacked-label controls only when labels are enabled', () => {
+    const props = (valueLabelType: ValueLabelType, onlyTotal = false) =>
+      ({
+        controls: {
+          value_label_type: { value: valueLabelType },
+          stack: { value: StackControlsValue.Stack },
+          only_total: { value: onlyTotal },
+        },
+      }) as unknown as ControlPanelsContainerProps;
+
+    expect(onlyTotalControl.config.visibility(props(ValueLabelType.None))).toBe(
+      false,
+    );
+    expect(
+      onlyTotalControl.config.visibility({
+        controls: { stack: { value: StackControlsValue.Stack } },
+      }),
+    ).toBe(false);
+    expect(
+      onlyTotalControl.config.visibility(props(ValueLabelType.Value)),
+    ).toBe(true);
+    expect(
+      percentageThresholdControl.config.visibility(
+        props(ValueLabelType.Percentage),
+      ),
+    ).toBe(true);
+    expect(
+      percentageThresholdControl.config.visibility(
+        props(ValueLabelType.Percentage, true),
+      ),
+    ).toBe(false);
+  });
 });
 
 test('should use StackControlOptionsWithoutStream for stack control', () => {

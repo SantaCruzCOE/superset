@@ -51,6 +51,13 @@ export enum EchartsTimeseriesSeriesType {
   End = 'end',
 }
 
+export enum ValueLabelType {
+  None = 'none',
+  Value = 'value',
+  Percentage = 'percentage',
+  ValueAndPercentage = 'value_and_percentage',
+}
+
 export type EchartsTimeseriesFormData = QueryFormData & {
   annotationLayers: AnnotationLayer[];
   area: boolean;
@@ -94,6 +101,7 @@ export type EchartsTimeseriesFormData = QueryFormData & {
   xAxisLabelRotation: number;
   xAxisLabelInterval: number | string;
   showValue: boolean;
+  valueLabelType?: ValueLabelType;
   onlyTotal: boolean;
   showExtraControls: boolean;
   percentageThreshold: number;

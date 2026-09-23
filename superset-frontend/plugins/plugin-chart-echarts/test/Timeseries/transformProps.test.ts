@@ -38,6 +38,7 @@ import {
   EchartsTimeseriesSeriesType,
   OrientationType,
   EchartsTimeseriesFormData,
+  ValueLabelType,
 } from '../../src/Timeseries/types';
 import { StackControlsValue, TIMESERIES_CONSTANTS } from '../../src/constants';
 import { LegendOrientation, LegendType } from '../../src/types';
@@ -784,6 +785,129 @@ describe('Does transformProps transform series correctly', () => {
         expect(series.label.formatter(params)).toBe(expectedLabel);
       });
     });
+  });
+
+  test('preserves legacy showValue charts as value labels', () => {
+    const chartProps = createTestChartProps({
+      formData: {
+        ...formData,
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        stack: false,
+        showValue: true,
+      },
+      queriesData,
+    });
+
+    const transformedSeries = transformProps(chartProps).echartOptions
+      .series as seriesType[];
+
+    expect(transformedSeries[0].label.show).toBe(true);
+    expect(
+      transformedSeries[0].label.formatter({
+        value: transformedSeries[0].data[0],
+        dataIndex: 0,
+        seriesIndex: 0,
+      }),
+    ).toBe('1');
+  });
+
+  test('uses each x-axis stack total as the percentage denominator', () => {
+    const chartProps = createTestChartProps({
+      formData: {
+        ...formData,
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        stack: true,
+        onlyTotal: false,
+        percentageThreshold: 0,
+        valueLabelType: ValueLabelType.Percentage,
+      },
+      queriesData,
+    });
+
+    const transformedSeries = transformProps(chartProps).echartOptions
+      .series as seriesType[];
+
+    expect(
+      transformedSeries[0].label.formatter({
+        value: transformedSeries[0].data[0],
+        dataIndex: 0,
+        seriesIndex: 0,
+      }),
+    ).toBe('25%');
+    expect(
+      transformedSeries[1].label.formatter({
+        value: transformedSeries[1].data[0],
+        dataIndex: 0,
+        seriesIndex: 1,
+      }),
+    ).toBe('50%');
+  });
+
+  test('uses each x-axis total for multiple unstacked series', () => {
+    const chartProps = createTestChartProps({
+      formData: {
+        ...formData,
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        stack: false,
+        valueLabelType: ValueLabelType.Percentage,
+      },
+      queriesData,
+    });
+
+    const transformedSeries = transformProps(chartProps).echartOptions
+      .series as seriesType[];
+
+    expect(
+      transformedSeries[0].label.formatter({
+        value: transformedSeries[0].data[0],
+        dataIndex: 0,
+        seriesIndex: 0,
+      }),
+    ).toBe('25%');
+    expect(
+      transformedSeries[1].label.formatter({
+        value: transformedSeries[1].data[0],
+        dataIndex: 0,
+        seriesIndex: 1,
+      }),
+    ).toBe('50%');
+  });
+
+  test('uses the series grand total for a single unstacked series', () => {
+    const singleSeriesQueriesData = [
+      createTestQueryData(
+        createTestData([{ 'San Francisco': 1 }, { 'San Francisco': 3 }], {
+          intervalMs: 300000000,
+        }),
+      ),
+    ];
+    const chartProps = createTestChartProps({
+      formData: {
+        ...formData,
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        stack: false,
+        valueLabelType: ValueLabelType.Percentage,
+      },
+      queriesData: singleSeriesQueriesData,
+    });
+
+    const transformedSeries = transformProps(chartProps).echartOptions
+      .series as seriesType[];
+
+    expect(
+      transformedSeries[0].label.formatter({
+        value: transformedSeries[0].data[0],
+        dataIndex: 0,
+        seriesIndex: 0,
+      }),
+    ).toBe('25%');
+    expect(
+      transformedSeries[0].label.formatter({
+        value: transformedSeries[0].data[1],
+        dataIndex: 1,
+        seriesIndex: 0,
+      }),
+    ).toBe('75%');
   });
 
   test('should remove time shift labels from label_map', () => {

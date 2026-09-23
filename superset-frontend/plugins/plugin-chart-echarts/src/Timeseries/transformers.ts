@@ -54,6 +54,7 @@ import {
   LegendOrientation,
   OrientationType,
   StackType,
+  ValueLabelType,
 } from '../types';
 
 import {
@@ -211,10 +212,13 @@ export function transformSeries(
     stackIdSuffix?: string;
     yAxisIndex?: number;
     showValue?: boolean;
+    valueLabelType?: ValueLabelType;
     onlyTotal?: boolean;
     legendState?: LegendState;
     formatter?: ValueFormatter;
+    percentFormatter?: ValueFormatter;
     totalStackedValues?: number[];
+    percentTotalValues?: number[];
     showValueIndexes?: number[];
     thresholdValues?: number[];
     richTooltip?: boolean;
@@ -245,10 +249,13 @@ export function transformSeries(
     stackIdSuffix,
     yAxisIndex = 0,
     showValue,
+    valueLabelType,
     onlyTotal,
-    formatter,
+    formatter: valueFormatter,
+    percentFormatter,
     legendState,
     totalStackedValues = [],
+    percentTotalValues,
     showValueIndexes = [],
     thresholdValues = [],
     richTooltip,
@@ -365,6 +372,35 @@ export function transformSeries(
     symbol = opts.lineSymbol || (isDarkMode ? 'circle' : 'emptyCircle');
   }
 
+  const resolvedValueLabelType =
+    valueLabelType ?? (showValue ? ValueLabelType.Value : ValueLabelType.None);
+
+  const formatValueLabel = (value: number, dataIndex: number): string => {
+    if (resolvedValueLabelType === ValueLabelType.None) {
+      return '';
+    }
+
+    const formattedValue = valueFormatter ? valueFormatter(value) : `${value}`;
+    const total = percentTotalValues?.[dataIndex];
+    const formattedPercent =
+      percentFormatter && typeof total === 'number'
+        ? percentFormatter(total === 0 ? 0 : value / total)
+        : undefined;
+
+    switch (resolvedValueLabelType) {
+      case ValueLabelType.Value:
+        return formattedValue;
+      case ValueLabelType.Percentage:
+        return formattedPercent ?? formattedValue;
+      case ValueLabelType.ValueAndPercentage:
+        return formattedPercent
+          ? `${formattedValue} (${formattedPercent})`
+          : formattedValue;
+      default:
+        return '';
+    }
+  };
+
   return {
     ...series,
     ...(Array.isArray(data)
@@ -430,23 +466,26 @@ export function transformSeries(
         const numericValue = isHorizontal ? value[0] : value[1];
         const isSelectedLegend = !legendState || legendState[seriesName];
         const isAreaExpand = stack === StackControlsValue.Expand;
-        if (!formatter) {
-          return numericValue;
+        if (!isSelectedLegend || typeof numericValue !== 'number') {
+          return '';
         }
-        if (!stack && isSelectedLegend) {
-          return formatter(numericValue);
+        if (!stack) {
+          return formatValueLabel(numericValue, dataIndex);
         }
         if (!onlyTotal) {
           if (
             numericValue >=
             (thresholdValues[dataIndex] || Number.MIN_SAFE_INTEGER)
           ) {
-            return formatter(numericValue);
+            return formatValueLabel(numericValue, dataIndex);
           }
           return '';
         }
         if (seriesIndex === showValueIndexes[dataIndex]) {
-          return formatter(isAreaExpand ? 1 : totalStackedValues[dataIndex]);
+          const totalValue = isAreaExpand ? 1 : totalStackedValues[dataIndex];
+          return typeof totalValue === 'number'
+            ? formatValueLabel(totalValue, dataIndex)
+            : '';
         }
         return '';
       },

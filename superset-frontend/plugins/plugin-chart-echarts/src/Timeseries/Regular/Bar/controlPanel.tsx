@@ -42,7 +42,6 @@ import {
   minorTicks,
   richTooltipSection,
   seriesOrderSection,
-  showValueSectionWithoutStream,
   truncateXAxis,
   xAxisBounds,
   xAxisLabelRotation,
@@ -57,6 +56,7 @@ import {
   TIME_SERIES_DESCRIPTION_TEXT,
 } from '../../constants';
 import { StackControlsValue } from '../../../constants';
+import { valueLabelSection } from './valueLabelControls';
 
 const { logAxis, minorSplitLine, truncateYAxis, yAxisBounds, orientation } =
   DEFAULT_FORM_DATA;
@@ -358,7 +358,7 @@ const config: ControlPanelConfig = {
         ...seriesOrderSection,
         ['color_scheme'],
         ['time_shift_color'],
-        ...showValueSectionWithoutStream,
+        ...valueLabelSection,
         ...colorByPrimaryAxisSection,
         [
           {
