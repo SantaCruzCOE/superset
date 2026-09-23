@@ -58,6 +58,7 @@ import {
 } from '../../constants';
 import { StackControlsValue } from '../../../constants';
 import { valueLabelSection } from './valueLabelControls';
+import { barSizingSection } from '../../../barSizingControls';
 
 const { logAxis, minorSplitLine, truncateYAxis, yAxisBounds, orientation } =
   DEFAULT_FORM_DATA;
@@ -357,6 +358,7 @@ const config: ControlPanelConfig = {
       expanded: true,
       controlSetRows: [
         ...textSizingSection,
+        ...barSizingSection,
         ...seriesOrderSection,
         ['color_scheme'],
         ['time_shift_color'],

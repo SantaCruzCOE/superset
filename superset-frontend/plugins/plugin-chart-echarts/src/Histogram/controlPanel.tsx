@@ -34,6 +34,7 @@ import {
   D3_NUMBER_FORMAT_DESCRIPTION_VALUES_TEXT,
 } from '@superset-ui/chart-controls';
 import { showLegendControl, showValueControl } from '../controls';
+import { barSizingSection } from '../barSizingControls';
 
 const config: ControlPanelConfig = {
   controlPanelSections: [
@@ -114,6 +115,7 @@ const config: ControlPanelConfig = {
       expanded: true,
       controlSetRows: [
         ...textSizingSection,
+        ...barSizingSection,
         ['color_scheme'],
         [showValueControl],
         [showLegendControl],

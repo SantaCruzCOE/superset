@@ -66,6 +66,7 @@ import { LabelLayout } from 'echarts/features';
 import { EchartsHandler, EchartsProps, EchartsStylesProps } from '../types';
 import { DEFAULT_LOCALE } from '../constants';
 import { mergeEchartsThemeOverrides } from '../utils/themeOverrides';
+import { applyBarSizing } from '../utils/barSizing';
 import { applyTextScaling } from '../utils/textSizing';
 
 // Define this interface here to avoid creating a dependency back to superset-frontend,
@@ -252,7 +253,11 @@ function Echart(
         return echartsTheme;
       };
 
-      const scaledEchartOptions = applyTextScaling(echartOptions, formData);
+      const sizedEchartOptions = applyBarSizing(echartOptions, formData);
+      const scaledEchartOptions = applyTextScaling(
+        sizedEchartOptions,
+        formData,
+      );
       const baseTheme = getEchartsTheme(scaledEchartOptions);
       const globalOverrides = theme.echartsOptionsOverrides || {};
       const chartOverrides = vizType

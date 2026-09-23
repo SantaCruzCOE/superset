@@ -46,6 +46,7 @@ import {
   xAxisLabelInterval,
   forceMaxInterval,
 } from '../controls';
+import { barSizingSection } from '../barSizingControls';
 
 const {
   area,
@@ -351,6 +352,7 @@ const config: ControlPanelConfig = {
       expanded: true,
       controlSetRows: [
         ...textSizingSection,
+        ...barSizingSection,
         ['color_scheme'],
         ['time_shift_color'],
         ...createCustomizeSection(t('Query A'), ''),

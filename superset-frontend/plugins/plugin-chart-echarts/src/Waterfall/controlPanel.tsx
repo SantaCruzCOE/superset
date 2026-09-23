@@ -26,6 +26,7 @@ import {
   sharedControls,
 } from '@superset-ui/chart-controls';
 import { textSizingSection, showValueControl } from '../controls';
+import { barSizingSection } from '../barSizingControls';
 
 const config: ControlPanelConfig = {
   controlPanelSections: [
@@ -46,6 +47,7 @@ const config: ControlPanelConfig = {
       expanded: true,
       controlSetRows: [
         ...textSizingSection,
+        ...barSizingSection,
         [showValueControl],
         [
           {
