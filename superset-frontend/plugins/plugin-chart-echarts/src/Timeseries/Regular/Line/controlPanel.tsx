@@ -47,6 +47,7 @@ import {
   xAxisLabelInterval,
   forceMaxInterval,
 } from '../../../controls';
+import { xAxisCustomOrderControl } from '../../../categoryOrderControl';
 
 const {
   area,
@@ -61,7 +62,13 @@ const {
 } = DEFAULT_FORM_DATA;
 const config: ControlPanelConfig = {
   controlPanelSections: [
-    sections.echartsTimeSeriesQueryWithXAxisSort,
+    {
+      ...sections.echartsTimeSeriesQueryWithXAxisSort,
+      controlSetRows: [
+        ...sections.echartsTimeSeriesQueryWithXAxisSort.controlSetRows,
+        [xAxisCustomOrderControl],
+      ],
+    },
     sections.advancedAnalyticsControls,
     sections.annotationsAndLayersControls,
     sections.forecastIntervalControls,

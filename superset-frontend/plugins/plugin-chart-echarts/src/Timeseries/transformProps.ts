@@ -89,6 +89,10 @@ import {
 import { resolveLegendLayout } from '../utils/legendLayout';
 import { buildResponsiveAxisLabels } from '../utils/responsiveAxisLabels';
 import {
+  orderCategoricalData,
+  parseXAxisCustomOrder,
+} from '../utils/categoryOrdering';
+import {
   extractAnnotationLabels,
   getAnnotationData,
 } from '../utils/annotation';
@@ -268,6 +272,7 @@ export default function transformProps(
     xAxisLabelInterval,
     xAxisSort,
     xAxisSortAsc,
+    xAxisCustomOrder,
     xAxisTimeFormat,
     xAxisNumberFormat,
     xAxisTitle,
@@ -317,8 +322,24 @@ export default function transformProps(
     xAxisLabel = verboseMap[xAxisLabel];
   }
   const isHorizontal = orientation === OrientationType.Horizontal;
+  const isMultiSeries = groupBy.length || metrics?.length > 1;
+  const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
+  const xAxisType = getAxisType(
+    stack,
+    xAxisForceCategorical,
+    xAxisDataType,
+    seriesType,
+  );
+  const explicitCategoryOrder = parseXAxisCustomOrder(xAxisCustomOrder);
+  const hasExplicitCategoryOrder =
+    xAxisType === AxisType.Category &&
+    Boolean(xAxisLabel) &&
+    explicitCategoryOrder.length > 0;
+  const orderedData = hasExplicitCategoryOrder
+    ? orderCategoricalData(rebasedData, xAxisLabel, explicitCategoryOrder)
+    : rebasedData;
   const { totalStackedValues, thresholdValues } = extractDataTotalValues(
-    rebasedData,
+    orderedData,
     {
       stack,
       percentageThreshold,
@@ -331,17 +352,8 @@ export default function transformProps(
   );
   const shouldShowRawCountsInTooltip = stack === StackControlsValue.Expand;
 
-  const isMultiSeries = groupBy.length || metrics?.length > 1;
-  const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
-  const xAxisType = getAxisType(
-    stack,
-    xAxisForceCategorical,
-    xAxisDataType,
-    seriesType,
-  );
-
   const [rawSeries, sortedTotalValues, minPositiveValue] = extractSeries(
-    rebasedData,
+    orderedData,
     {
       fillNeighborValue: stack && !forecastEnabled ? 0 : undefined,
       xAxis: xAxisLabel,
@@ -351,8 +363,10 @@ export default function transformProps(
       isHorizontal,
       sortSeriesType,
       sortSeriesAscending,
-      xAxisSortSeries: isMultiSeries ? xAxisSort : undefined,
-      xAxisSortSeriesAscending: isMultiSeries ? xAxisSortAsc : undefined,
+      xAxisSortSeries:
+        isMultiSeries && !hasExplicitCategoryOrder ? xAxisSort : undefined,
+      xAxisSortSeriesAscending:
+        isMultiSeries && !hasExplicitCategoryOrder ? xAxisSortAsc : undefined,
       xAxisType,
     },
   );
@@ -700,7 +714,7 @@ export default function transformProps(
         series.push(
           transformFormulaAnnotation(
             layer,
-            rebasedData as TimeseriesDataRecord[],
+            orderedData as TimeseriesDataRecord[],
             xAxisLabel,
             xAxisType,
             colorScale,
@@ -995,7 +1009,7 @@ export default function transformProps(
       ? buildResponsiveAxisLabels({
           labels: Array.from(
             new Set(
-              rebasedData.map(record =>
+              orderedData.map(record =>
                 formatCategory(record[xAxisLabel] as string | number),
               ),
             ),

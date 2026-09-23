@@ -60,6 +60,7 @@ import { StackControlsValue } from '../../../constants';
 import { valueLabelSection } from './valueLabelControls';
 import { barSizingSection } from '../../../barSizingControls';
 import { axisLabelLayoutSection } from '../../../axisLabelLayoutControls';
+import { xAxisCustomOrderControl } from '../../../categoryOrderControl';
 
 const { logAxis, minorSplitLine, truncateYAxis, yAxisBounds, orientation } =
   DEFAULT_FORM_DATA;
@@ -317,7 +318,13 @@ function createAxisControl(axis: 'x' | 'y'): ControlSetRow[] {
 
 const config: ControlPanelConfig = {
   controlPanelSections: [
-    sections.echartsTimeSeriesQueryWithXAxisSort,
+    {
+      ...sections.echartsTimeSeriesQueryWithXAxisSort,
+      controlSetRows: [
+        ...sections.echartsTimeSeriesQueryWithXAxisSort.controlSetRows,
+        [xAxisCustomOrderControl],
+      ],
+    },
     sections.advancedAnalyticsControls,
     sections.annotationsAndLayersControls,
     sections.forecastIntervalControls,

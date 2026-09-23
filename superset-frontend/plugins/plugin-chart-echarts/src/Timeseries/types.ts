@@ -115,6 +115,7 @@ export type EchartsTimeseriesFormData = QueryFormData & {
   orientation?: OrientationType;
   axisLabelLayoutMode?: 'legacy' | 'responsive';
   axisLabelLayoutPreference?: 'plot' | 'balanced' | 'labels';
+  xAxisCustomOrder?: string;
 } & LegendFormData &
   TitleFormData;
 
