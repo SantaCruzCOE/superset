@@ -1,0 +1,82 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+name: SCCOE Superset 6.1 validation
+
+on:
+  push:
+    branches:
+      - sccoe/6.1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sccoe-superset-6-1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    if: github.repository == 'SantaCruzCOE/superset'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: superset-frontend
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: 22.23.2
+          cache: npm
+          cache-dependency-path: superset-frontend/package-lock.json
+      - run: npm ci
+      - name: ECharts regression tests
+        env:
+          NODE_ENV: test
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: ./node_modules/.bin/jest --runInBand --silent plugins/plugin-chart-echarts
+      - run: npm run plugins:build
+      - run: npm run type
+      - run: npm run lint
+      - run: npm run build-translation
+
+  lean-image:
+    if: github.repository == 'SantaCruzCOE/superset'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+      - name: Build source image without publishing
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --target lean \
+            --load \
+            --tag "sccoe-superset-lean:${GITHUB_SHA}" \
+            .
+      - name: Check dependencies and non-root runtime
+        run: |
+          image="sccoe-superset-lean:${GITHUB_SHA}"
+          docker run --rm --entrypoint /usr/local/bin/uv "$image" \
+            pip check --python /app/.venv/bin/python
+          docker run --rm --entrypoint /app/.venv/bin/python "$image" -c \
+            'import os, sys, superset; assert sys.version_info[:2] == (3, 12); assert os.geteuid() != 0'

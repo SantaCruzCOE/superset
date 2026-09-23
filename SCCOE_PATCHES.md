@@ -60,3 +60,9 @@ engine) and Python `3.12.14` for the lean runtime. Superset 6.1 declares Python
 runtime imports, and non-root startup have not yet been verified for this
 combination. The legacy configuration repository Dockerfile fetches a 6.0
 archive and overlays source files; it must not be used to build this fork.
+
+The credentials-free `SCCOE Superset 6.1 validation` workflow runs on pushes
+to `sccoe/6.1`. It tests the ECharts patch stack and builds the fork's lean
+`linux/amd64` image on a hosted runner. It neither publishes an image nor
+deploys a release. Passing this early gate does not validate production
+connectors, runtime configuration, or the metadata migration.
