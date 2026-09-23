@@ -30,7 +30,10 @@ import {
   ValueLabelPosition,
   ValueLabelType,
 } from '../../src';
-import { TIMESERIES_CONSTANTS } from '../../src/constants';
+import {
+  StackControlsValue,
+  TIMESERIES_CONSTANTS,
+} from '../../src/constants';
 import { LegendOrientation } from '../../src/types';
 import {
   transformSeries,
@@ -253,6 +256,41 @@ describe('transformSeries', () => {
     });
 
     expect(formatFirstLabel(result)).toBe('51 (100%)');
+  });
+
+  test('formats expanded-stack labels from raw values and normalized percentages', () => {
+    const result = createBarSeries({
+      stack: StackControlsValue.Expand,
+      valueLabelType: ValueLabelType.ValueAndPercentage,
+      percentFormatter,
+      percentTotalValues: [51],
+    });
+
+    expect(
+      formatFirstLabel(result, {
+        value: [0, 17 / 51],
+        data: { value: [0, 17 / 51], rawValue: 17 },
+      }),
+    ).toBe('17 (33%)');
+  });
+
+  test('formats expanded-stack totals as raw value and 100 percent', () => {
+    const result = createBarSeries({
+      stack: StackControlsValue.Expand,
+      onlyTotal: true,
+      valueLabelType: ValueLabelType.ValueAndPercentage,
+      percentFormatter,
+      percentTotalValues: [51],
+      totalStackedValues: [51],
+      showValueIndexes: [0],
+    });
+
+    expect(
+      formatFirstLabel(result, {
+        value: [0, 17 / 51],
+        data: { value: [0, 17 / 51], rawValue: 17 },
+      }),
+    ).toBe('51 (100%)');
   });
 });
 

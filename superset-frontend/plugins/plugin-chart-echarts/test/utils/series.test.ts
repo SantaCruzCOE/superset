@@ -49,7 +49,7 @@ import {
   LegendType,
 } from '../../src/types';
 import { defaultLegendPadding } from '../../src/defaults';
-import { NULL_STRING } from '../../src/constants';
+import { NULL_STRING, StackControlsValue } from '../../src/constants';
 
 const {
   getHorizontalLegendAvailableWidth,
@@ -662,6 +662,75 @@ describe('extractSeries', () => {
       ],
       totalStackedValues,
       1,
+    ]);
+  });
+
+  test('normalizes expanded stacks while preserving raw values and zero totals', () => {
+    const data = [
+      { x: 'A', apples: 3, pears: 1 },
+      { x: 'B', apples: null, pears: 2 },
+      { x: 'C', apples: 2, pears: -1 },
+      { x: 'D', apples: 1, pears: -1 },
+    ];
+    const totalStackedValues = [4, 2, 1, 0];
+
+    expect(
+      extractSeries(data, {
+        xAxis: 'x',
+        stack: StackControlsValue.Expand,
+        totalStackedValues,
+        fillNeighborValue: 0,
+      }),
+    ).toEqual([
+      [
+        {
+          id: 'pears',
+          name: 'pears',
+          data: [
+            { value: ['A', 0.25], rawValue: 1 },
+            { value: ['B', 1], rawValue: 2 },
+            { value: ['C', -1], rawValue: -1 },
+            { value: ['D', 0], rawValue: -1 },
+          ],
+        },
+        {
+          id: 'apples',
+          name: 'apples',
+          data: [
+            { value: ['A', 0.75], rawValue: 3 },
+            { value: ['B', 0], rawValue: 0 },
+            { value: ['C', 2], rawValue: 2 },
+            { value: ['D', 0], rawValue: 1 },
+          ],
+        },
+      ],
+      totalStackedValues,
+      1,
+    ]);
+  });
+
+  test('preserves expanded raw values when transposing horizontal bars', () => {
+    const [series] = extractSeries(
+      [{ x: 'A', apples: 3, pears: 1 }],
+      {
+        xAxis: 'x',
+        stack: StackControlsValue.Expand,
+        totalStackedValues: [4],
+        isHorizontal: true,
+      },
+    );
+
+    expect(series).toEqual([
+      {
+        id: 'pears',
+        name: 'pears',
+        data: [{ value: [0.25, 'A'], rawValue: 1 }],
+      },
+      {
+        id: 'apples',
+        name: 'apples',
+        data: [{ value: [0.75, 'A'], rawValue: 3 }],
+      },
     ]);
   });
 });

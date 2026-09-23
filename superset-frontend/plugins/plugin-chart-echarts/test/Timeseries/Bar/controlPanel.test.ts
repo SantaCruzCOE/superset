@@ -20,7 +20,6 @@ import { ControlPanelsContainerProps } from '@superset-ui/chart-controls/types';
 import { GenericDataType } from '@apache-superset/core/common';
 import controlPanel from '../../../src/Timeseries/Regular/Bar/controlPanel';
 import {
-  StackControlOptionsWithoutStream,
   StackControlsValue,
 } from '../../../src/constants';
 import {
@@ -242,11 +241,13 @@ describe('value label controls', () => {
   });
 });
 
-test('should use StackControlOptionsWithoutStream for stack control', () => {
+test('should include None, Stack, and Expand stack options', () => {
   const stackControl: any = getControl('stack');
   expect(stackControl).toBeDefined();
   expect(stackControl.config).toBeDefined();
-  expect(stackControl.config.choices).toBe(StackControlOptionsWithoutStream);
+  expect(stackControl.config.choices.map(([value]: [unknown]) => value)).toEqual(
+    [null, StackControlsValue.Stack, StackControlsValue.Expand],
+  );
 });
 
 test('should not include Stream option in stack control choices', () => {
@@ -303,6 +304,20 @@ test('should preserve stack value when formData has Stack value', () => {
   const result = config.formDataOverrides!(mockFormData);
 
   expect(result.stack).toBe(StackControlsValue.Stack);
+});
+
+test('should preserve stack value when formData has Expand value', () => {
+  const mockFormData = {
+    datasource: '1__table',
+    viz_type: 'echarts_timeseries_bar',
+    metrics: ['test_metric'],
+    groupby: ['test_column'],
+    stack: StackControlsValue.Expand,
+  };
+
+  const result = config.formDataOverrides!(mockFormData);
+
+  expect(result.stack).toBe(StackControlsValue.Expand);
 });
 
 test('should preserve stack value when formData has null value', () => {

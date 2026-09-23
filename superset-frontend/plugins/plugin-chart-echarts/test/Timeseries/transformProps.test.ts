@@ -609,10 +609,13 @@ describe('Does transformProps transform series correctly', () => {
   type seriesDataType = [Date, number];
   type labelFormatterType = (params: {
     value: seriesDataType;
+    data?: unknown;
     dataIndex: number;
     seriesIndex: number;
+    seriesName?: string;
   }) => string;
   type seriesType = {
+    id?: string;
     label: { show: boolean; formatter: labelFormatterType };
     data: seriesDataType[];
     name: string;
@@ -932,6 +935,110 @@ describe('Does transformProps transform series correctly', () => {
         seriesIndex: 0,
       }),
     ).toBe('75%');
+  });
+
+  test('preserves expanded-stack raw values, normalized geometry, labels, and bounds', () => {
+    const chartProps = createTestChartProps({
+      formData: {
+        ...formData,
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        stack: StackControlsValue.Expand,
+        onlyTotal: false,
+        percentageThreshold: 0,
+        valueLabelType: ValueLabelType.ValueAndPercentage,
+      },
+      queriesData,
+    });
+
+    const transformed = transformProps(chartProps);
+    const transformedSeries = transformed.echartOptions.series as seriesType[];
+    const firstPoint = transformedSeries[0].data[0] as any;
+
+    expect(firstPoint).toEqual({
+      value: [BASE_TIMESTAMP, 0.25],
+      rawValue: 1,
+    });
+    expect(
+      transformedSeries[0].label.formatter({
+        value: firstPoint.value,
+        data: firstPoint,
+        dataIndex: 0,
+        seriesIndex: 0,
+        seriesName: transformedSeries[0].name,
+      }),
+    ).toBe('1 (25%)');
+    expect(transformed.echartOptions.yAxis).toMatchObject({ min: 0, max: 1 });
+  });
+
+  test('preserves expanded-stack raw values for horizontal bars', () => {
+    const chartProps = createTestChartProps({
+      formData: {
+        ...formData,
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        stack: StackControlsValue.Expand,
+        orientation: OrientationType.Horizontal,
+        onlyTotal: false,
+        percentageThreshold: 0,
+        valueLabelType: ValueLabelType.Percentage,
+      },
+      queriesData,
+    });
+
+    const transformed = transformProps(chartProps);
+    const transformedSeries = transformed.echartOptions.series as seriesType[];
+    const firstPoint = transformedSeries[0].data[0] as any;
+
+    expect(firstPoint).toEqual({
+      value: [0.25, BASE_TIMESTAMP],
+      rawValue: 1,
+    });
+    expect(
+      transformedSeries[0].label.formatter({
+        value: firstPoint.value,
+        data: firstPoint,
+        dataIndex: 0,
+        seriesIndex: 0,
+        seriesName: transformedSeries[0].name,
+      }),
+    ).toBe('25%');
+    expect(transformed.echartOptions.xAxis).toMatchObject({ min: 0, max: 1 });
+  });
+
+  test('shows normalized percentages and raw counts in expanded-stack tooltips', () => {
+    const chartProps = createTestChartProps({
+      formData: {
+        ...formData,
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        stack: StackControlsValue.Expand,
+        richTooltip: true,
+        showTooltipTotal: true,
+      },
+      queriesData,
+    });
+
+    const transformed = transformProps(chartProps);
+    const transformedSeries = transformed.echartOptions.series as seriesType[];
+    const params = transformedSeries.map((series, seriesIndex) => {
+      const point = series.data[0] as any;
+      return {
+        value: point.value,
+        data: point,
+        dataIndex: 0,
+        seriesIndex,
+        seriesId: series.id,
+        seriesName: series.name,
+        color: '#000000',
+      };
+    });
+    const tooltip = (transformed.echartOptions.tooltip as any).formatter(
+      params,
+    );
+    const tooltipText = tooltip.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
+    expect(tooltipText).toContain('Boston 25% 1');
+    expect(tooltipText).toContain('New York 50% 2');
+    expect(tooltipText).toContain('San Francisco 25% 1');
+    expect(tooltipText).toContain('Total 100% 4');
   });
 
   test('should remove time shift labels from label_map', () => {

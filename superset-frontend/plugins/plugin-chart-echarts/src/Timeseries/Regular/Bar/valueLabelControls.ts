@@ -28,6 +28,7 @@ import {
   percentageThresholdControl,
   stackControlWithoutStream,
 } from '../../../controls';
+import { StackControlsValue } from '../../../constants';
 import { ValueLabelPosition, ValueLabelType } from '../../types';
 
 const valueLabelTypeControl: ControlSetItem = {
@@ -86,6 +87,21 @@ const valueLabelPositionControl: ControlSetItem = {
   },
 };
 
+const baseStackControl = stackControlWithoutStream as CustomControlItem;
+const stackControlWithExpand: ControlSetItem = {
+  ...baseStackControl,
+  config: {
+    ...baseStackControl.config,
+    choices: [
+      ...(baseStackControl.config.choices ?? []),
+      [StackControlsValue.Expand, t('Expand')],
+    ],
+    description: t(
+      'Stack series on top of each other. Expand normalizes each x-axis value to 100%.',
+    ),
+  },
+};
+
 const baseOnlyTotalControl = onlyTotalControl as CustomControlItem;
 const labelAwareOnlyTotalControl: ControlSetItem = {
   ...baseOnlyTotalControl,
@@ -112,7 +128,7 @@ const labelAwarePercentageThresholdControl: ControlSetItem = {
 export const valueLabelSection: ControlSetRow[] = [
   [valueLabelTypeControl],
   [valueLabelPositionControl],
-  [stackControlWithoutStream],
+  [stackControlWithExpand],
   [labelAwareOnlyTotalControl],
   [labelAwarePercentageThresholdControl],
 ];

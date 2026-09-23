@@ -464,21 +464,23 @@ export function extractShowValueIndexes(
   if (stack) {
     series.forEach((entry, seriesIndex) => {
       const { data = [] } = entry;
-      (data as [any, number][]).forEach((datum, dataIndex) => {
+      (data as any[]).forEach((datum, dataIndex) => {
+        const datumValue = Array.isArray(datum) ? datum : datum?.value;
+        if (!Array.isArray(datumValue)) {
+          return;
+        }
+        const numericValue = datumValue[isHorizontal ? 0 : 1];
         if (entry.id && legendState && !legendState[entry.id]) {
           return;
         }
-        if (!onlyTotal && datum[isHorizontal ? 0 : 1] !== null) {
+        if (!onlyTotal && numericValue !== null) {
           showValueIndexes[dataIndex] = seriesIndex;
         }
         if (onlyTotal) {
-          if (datum[isHorizontal ? 0 : 1] > 0) {
+          if (numericValue > 0) {
             showValueIndexes[dataIndex] = seriesIndex;
           }
-          if (
-            !showValueIndexes[dataIndex] &&
-            datum[isHorizontal ? 0 : 1] !== null
-          ) {
+          if (!showValueIndexes[dataIndex] && numericValue !== null) {
             showValueIndexes[dataIndex] = seriesIndex;
           }
         }
@@ -699,16 +701,40 @@ export function extractSeries(
         let value: DataRecordValue | undefined = currentValue;
         if (isFillNeighborValue) {
           value = fillNeighborValue;
-        } else if (
+        }
+        if (
           stack === StackControlsValue.Expand &&
           totalStackedValue !== undefined
         ) {
-          value = ((value || 0) as number) / totalStackedValue;
+          const rawValue = typeof value === 'number' ? value : 0;
+          const normalizedValue =
+            totalStackedValue === 0 ? 0 : rawValue / totalStackedValue;
+          return {
+            value: [row[xAxis], normalizedValue],
+            rawValue,
+          };
         }
         return [row[xAxis], value];
       })
-      .filter(obs => !removeNulls || (obs[0] !== null && obs[1] !== null))
-      .map(obs => (isHorizontal ? [obs[1], obs[0]] : obs)),
+      .filter(obs => {
+        if (!removeNulls) {
+          return true;
+        }
+        const tuple = Array.isArray(obs) ? obs : obs.value;
+        return tuple[0] !== null && tuple[1] !== null;
+      })
+      .map(obs => {
+        if (!isHorizontal) {
+          return obs;
+        }
+        if (Array.isArray(obs)) {
+          return [obs[1], obs[0]];
+        }
+        return {
+          ...obs,
+          value: [obs.value[1], obs.value[0]],
+        };
+      }),
   }));
   return [
     finalSeries,

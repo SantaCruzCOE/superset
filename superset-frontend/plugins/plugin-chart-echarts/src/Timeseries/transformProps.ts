@@ -326,6 +326,7 @@ export default function transformProps(
   const extraMetricLabels = extractExtraMetrics(chartProps.rawFormData).map(
     getMetricLabel,
   );
+  const shouldShowRawCountsInTooltip = stack === StackControlsValue.Expand;
 
   const isMultiSeries = groupBy.length || metrics?.length > 1;
   const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
@@ -374,10 +375,16 @@ export default function transformProps(
     [ValueLabelType.Percentage, ValueLabelType.ValueAndPercentage].includes(
       resolvedValueLabelType ?? ValueLabelType.None,
     );
-  const percentLabelFormatter = shouldShowPercentageLabels
+  const shouldShowRawAndPercentLabelsInExpand =
+    isBar &&
+    isAreaExpand &&
+    resolvedValueLabelType === ValueLabelType.ValueAndPercentage;
+  const shouldComputePercentTotalValues =
+    shouldShowPercentageLabels || shouldShowRawAndPercentLabelsInExpand;
+  const percentLabelFormatter = shouldComputePercentTotalValues
     ? getPercentFormatter(NumberFormats.PERCENT)
     : undefined;
-  const percentTotalValues = shouldShowPercentageLabels
+  const percentTotalValues = shouldComputePercentTotalValues
     ? (() => {
         if (stack) {
           return sortedTotalValues.map(value =>
@@ -561,13 +568,23 @@ export default function transformProps(
         seriesType,
         legendState,
         stack,
-        formatter: forcePercentFormatter
-          ? percentFormatter
-          : (getCustomFormatter(
+        formatter: (() => {
+          const rawFormatter =
+            getCustomFormatter(
               customFormatters,
               metrics,
               labelMap?.[seriesName]?.[0],
-            ) ?? defaultFormatter),
+            ) ?? defaultFormatter;
+          const wantsRawCountsInLabels =
+            isBar &&
+            isAreaExpand &&
+            [ValueLabelType.Value, ValueLabelType.ValueAndPercentage].includes(
+              resolvedValueLabelType ?? ValueLabelType.None,
+            );
+          return wantsRawCountsInLabels || !forcePercentFormatter
+            ? rawFormatter
+            : percentFormatter;
+        })(),
         showValue: resolvedShowValue,
         valueLabelPosition: resolvedValueLabelPosition,
         valueLabelType: resolvedValueLabelType,
@@ -1129,6 +1146,8 @@ export default function transformProps(
         const formatter = forcePercentFormatter
           ? percentFormatter
           : (getCustomFormatter(customFormatters, metrics) ?? defaultFormatter);
+        const rawCountFormatter =
+          getCustomFormatter(customFormatters, metrics) ?? defaultFormatter;
 
         const rows: string[][] = [];
         const total = Object.values(filteredForecastValues).reduce(
@@ -1136,6 +1155,25 @@ export default function transformProps(
             value.observation !== undefined ? acc + value.observation : acc,
           0,
         );
+        const rawValueBySeriesId = new Map<string, number>();
+        let rawTotal = 0;
+        if (shouldShowRawCountsInTooltip) {
+          forecastValue.forEach((item: any) => {
+            const seriesId = String(item?.seriesId ?? '');
+            const seriesName = String(item?.seriesName ?? '');
+            const rawValue =
+              item?.data && typeof item.data === 'object'
+                ? (item.data as any).rawValue
+                : undefined;
+            if (seriesId && typeof rawValue === 'number') {
+              rawValueBySeriesId.set(seriesId, rawValue);
+              if (seriesName && !rawValueBySeriesId.has(seriesName)) {
+                rawValueBySeriesId.set(seriesName, rawValue);
+              }
+              rawTotal += rawValue;
+            }
+          });
+        }
         const allowTotal = Boolean(isMultiSeries) && richTooltip && !isForecast;
         const showPercentage =
           allowTotal && !forcePercentFormatter && showTooltipPercentage;
@@ -1173,6 +1211,9 @@ export default function transformProps(
                 percentFormatter.format(value.observation / (total || 1)),
               );
             }
+            if (shouldShowRawCountsInTooltip && !annotationRow) {
+              row.push(rawCountFormatter(rawValueBySeriesId.get(key) ?? 0));
+            }
             rows.push(row);
             if (key === focusedSeries) {
               focusedRow = rows.length - 1;
@@ -1188,6 +1229,9 @@ export default function transformProps(
           const totalRow = ['Total', formatter.format(total)];
           if (showPercentage) {
             totalRow.push(percentFormatter.format(1));
+          }
+          if (shouldShowRawCountsInTooltip) {
+            totalRow.push(rawCountFormatter(rawTotal));
           }
           rows.push(totalRow);
         }

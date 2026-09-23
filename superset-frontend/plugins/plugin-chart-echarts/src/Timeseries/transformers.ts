@@ -478,27 +478,50 @@ export function transformSeries(
         ) {
           return '';
         }
-        const { value, dataIndex, seriesIndex, seriesName } = params;
+        const { value, data, dataIndex, seriesIndex, seriesName } = params;
         const numericValue = isHorizontal ? value[0] : value[1];
         const isSelectedLegend = !legendState || legendState[seriesName];
         const isAreaExpand = stack === StackControlsValue.Expand;
+        const rawValue =
+          isAreaExpand && data && typeof data === 'object'
+            ? (data as any).rawValue
+            : undefined;
+        const shouldUseRawValueForLabel =
+          isAreaExpand &&
+          typeof rawValue === 'number' &&
+          [ValueLabelType.Value, ValueLabelType.ValueAndPercentage].includes(
+            resolvedValueLabelType,
+          );
+        const compareValue =
+          isAreaExpand && typeof rawValue === 'number'
+            ? rawValue
+            : numericValue;
+        const labelValue = shouldUseRawValueForLabel ? rawValue : numericValue;
         if (!isSelectedLegend || typeof numericValue !== 'number') {
           return '';
         }
         if (!stack) {
-          return formatValueLabel(numericValue, dataIndex);
+          return formatValueLabel(labelValue, dataIndex);
         }
         if (!onlyTotal) {
           if (
-            numericValue >=
+            compareValue >=
             (thresholdValues[dataIndex] || Number.MIN_SAFE_INTEGER)
           ) {
-            return formatValueLabel(numericValue, dataIndex);
+            return formatValueLabel(labelValue, dataIndex);
           }
           return '';
         }
         if (seriesIndex === showValueIndexes[dataIndex]) {
-          const totalValue = isAreaExpand ? 1 : totalStackedValues[dataIndex];
+          const totalRawValue = totalStackedValues[dataIndex];
+          const totalValue =
+            isAreaExpand &&
+            shouldUseRawValueForLabel &&
+            typeof totalRawValue === 'number'
+              ? totalRawValue
+              : isAreaExpand
+                ? 1
+                : totalRawValue;
           return typeof totalValue === 'number'
             ? formatValueLabel(totalValue, dataIndex)
             : '';
