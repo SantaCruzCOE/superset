@@ -80,7 +80,9 @@ jobs:
             pip check --python /app/.venv/bin/python
           docker run --rm --entrypoint /app/.venv/bin/python "$image" -c '
           import os
+          import secrets
           import sys
+          os.environ["SUPERSET_SECRET_KEY"] = secrets.token_urlsafe(48)
           import superset
           import psycopg2
           import redis
@@ -89,8 +91,8 @@ jobs:
           import snowflake.sqlalchemy
           from authlib.integrations.flask_client import OAuth
           from google.cloud import bigquery
-          from superset.extensions import celery_app
-          from superset.tasks.cache import cache_warmup
+          from superset.tasks.celery_app import app as worker_app
           assert sys.version_info[:2] == (3, 12)
           assert os.geteuid() != 0
+          assert "cache-warmup" in worker_app.tasks
           '
