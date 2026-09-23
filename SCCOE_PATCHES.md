@@ -53,9 +53,10 @@ applicable. A source commit or test pass alone is not production parity.
 
 ## Build status
 
-This patch inventory is not an image release. The upstream `6.1.0` Dockerfile
-uses `node:20-trixie-slim` for the frontend stage, while
-`superset-frontend/package.json` requires Node `^22.22.0`. Resolve and validate
-that mismatch before a source-built release image. The legacy configuration
-repository Dockerfile fetches a 6.0 archive and overlays source files; it must
-not be used to build this fork.
+This patch inventory is not an image release. The fork Dockerfile selects
+Node `22.23.2` for the frontend stage (matching the declared `^22.22.0`
+engine) and Python `3.12.14` for the lean runtime. Superset 6.1 declares Python
+3.12 support, but the full source build, connector installation, `pip check`,
+runtime imports, and non-root startup have not yet been verified for this
+combination. The legacy configuration repository Dockerfile fetches a 6.0
+archive and overlays source files; it must not be used to build this fork.
