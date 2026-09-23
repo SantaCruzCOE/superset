@@ -87,6 +87,7 @@ import {
   getMinAndMaxFromBounds,
 } from '../utils/series';
 import { resolveLegendLayout } from '../utils/legendLayout';
+import { buildResponsiveAxisLabels } from '../utils/responsiveAxisLabels';
 import {
   extractAnnotationLabels,
   getAnnotationData,
@@ -236,6 +237,8 @@ export default function transformProps(
     onlyTotal,
     opacity,
     orientation,
+    axisLabelLayoutMode,
+    axisLabelLayoutPreference,
     percentageThreshold,
     richTooltip,
     seriesType,
@@ -428,10 +431,7 @@ export default function transformProps(
             ? total + numericValue
             : total;
         }, 0);
-        return Array.from(
-          { length: firstSeriesData.length },
-          () => grandTotal,
-        );
+        return Array.from({ length: firstSeriesData.length }, () => grandTotal);
       })()
     : undefined;
 
@@ -978,6 +978,43 @@ export default function transformProps(
       })()
     : xAxisFormatter;
 
+  const formValues = formData as Record<string, unknown>;
+  const textScale = Number(formValues.textScale) || 100;
+  const axisLabelScale = Number(formValues.axisLabelScale) || 100;
+  const formatCategory = (value: string | number) =>
+    String(
+      typeof xAxisFormatter === 'function'
+        ? xAxisFormatter(value as never)
+        : value,
+    );
+  const responsiveAxisLabels =
+    axisLabelLayoutMode === 'responsive' &&
+    isBar &&
+    isHorizontal &&
+    xAxisType === AxisType.Category
+      ? buildResponsiveAxisLabels({
+          labels: Array.from(
+            new Set(
+              rebasedData.map(record =>
+                formatCategory(record[xAxisLabel] as string | number),
+              ),
+            ),
+          ),
+          width,
+          height,
+          fontSize:
+            (Number(theme.fontSize) || 12) *
+            (textScale / 100) *
+            (axisLabelScale / 100),
+          fontFamily: theme.fontFamily,
+          preference: ['plot', 'labels'].includes(
+            axisLabelLayoutPreference ?? '',
+          )
+            ? (axisLabelLayoutPreference as 'plot' | 'labels')
+            : 'balanced',
+        })
+      : undefined;
+
   let xAxis: any = {
     type: xAxisType,
     name: xAxisTitle,
@@ -990,10 +1027,20 @@ export default function transformProps(
       // At 0° rotation, keep hideOverlap to prevent long labels
       // from overlapping each other, with showMaxLabel to ensure
       // the last data point label stays visible (#37181).
-      hideOverlap: !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
-      formatter: deduplicatedFormatter,
+      hideOverlap: responsiveAxisLabels
+        ? false
+        : !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
+      formatter: responsiveAxisLabels
+        ? (value: string | number) =>
+            responsiveAxisLabels.format(formatCategory(value))
+        : deduplicatedFormatter,
       rotate: xAxisLabelRotation,
       interval: xAxisLabelInterval,
+      ...(responsiveAxisLabels && {
+        width: responsiveAxisLabels.width,
+        lineHeight: responsiveAxisLabels.lineHeight,
+        verticalAlign: 'middle',
+      }),
       // Force last label on non-rotated time axes to prevent
       // hideOverlap from hiding it. Skipped when rotated to
       // avoid phantom labels at the axis boundary.

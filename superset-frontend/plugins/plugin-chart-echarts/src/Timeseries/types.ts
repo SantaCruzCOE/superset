@@ -113,6 +113,8 @@ export type EchartsTimeseriesFormData = QueryFormData & {
   percentageThreshold: number;
   colorByPrimaryAxis?: boolean;
   orientation?: OrientationType;
+  axisLabelLayoutMode?: 'legacy' | 'responsive';
+  axisLabelLayoutPreference?: 'plot' | 'balanced' | 'labels';
 } & LegendFormData &
   TitleFormData;
 
