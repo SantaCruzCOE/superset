@@ -17,6 +17,7 @@
  * under the License.
  */
 import { t } from '@apache-superset/core/translation';
+import { textSizingSection } from '../controls';
 import {
   sharedControls,
   ControlPanelConfig,
@@ -60,6 +61,7 @@ const config: ControlPanelConfig = {
       label: t('Chart Options'),
       expanded: true,
       controlSetRows: [
+        ...textSizingSection,
         [<ControlSubSectionHeader>{t('General')}</ControlSubSectionHeader>],
         [
           {

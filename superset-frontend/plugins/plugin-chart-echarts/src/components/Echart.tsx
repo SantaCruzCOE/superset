@@ -66,6 +66,7 @@ import { LabelLayout } from 'echarts/features';
 import { EchartsHandler, EchartsProps, EchartsStylesProps } from '../types';
 import { DEFAULT_LOCALE } from '../constants';
 import { mergeEchartsThemeOverrides } from '../utils/themeOverrides';
+import { applyTextScaling } from '../utils/textSizing';
 
 // Define this interface here to avoid creating a dependency back to superset-frontend,
 // TODO: to move the type to @superset-ui/core
@@ -130,6 +131,7 @@ function Echart(
     width,
     height,
     echartOptions,
+    formData,
     eventHandlers,
     zrEventHandlers,
     selectedValues = {},
@@ -250,7 +252,8 @@ function Echart(
         return echartsTheme;
       };
 
-      const baseTheme = getEchartsTheme(echartOptions);
+      const scaledEchartOptions = applyTextScaling(echartOptions, formData);
+      const baseTheme = getEchartsTheme(scaledEchartOptions);
       const globalOverrides = theme.echartsOptionsOverrides || {};
       const chartOverrides = vizType
         ? theme.echartsOptionsOverridesByChartType?.[vizType] || {}
@@ -266,7 +269,7 @@ function Echart(
 
       const themedEchartOptions = mergeEchartsThemeOverrides(
         baseTheme,
-        echartOptions,
+        scaledEchartOptions,
         globalOverrides,
         chartOverrides,
         animationOverride,
@@ -282,7 +285,15 @@ function Echart(
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- isDashboardRefreshing intentionally excluded to prevent extra setOption calls
-  }, [didMount, echartOptions, eventHandlers, zrEventHandlers, theme, vizType]);
+  }, [
+    didMount,
+    echartOptions,
+    eventHandlers,
+    zrEventHandlers,
+    theme,
+    vizType,
+    formData,
+  ]);
 
   // Clear tooltip on refresh start to avoid stale content (#39247)
   useEffect(() => {

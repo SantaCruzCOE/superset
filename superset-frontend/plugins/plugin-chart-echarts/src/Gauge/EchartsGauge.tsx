@@ -32,6 +32,7 @@ export default function EchartsGauge(props: GaugeChartTransformedProps) {
       height={height}
       width={width}
       echartOptions={echartOptions}
+      formData={formData}
       eventHandlers={eventHandlers}
       selectedValues={selectedValues}
       vizType={formData.vizType}

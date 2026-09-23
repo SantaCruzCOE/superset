@@ -174,6 +174,7 @@ export default function EchartsGraph({
       height={height}
       width={width}
       echartOptions={echartOptions}
+      formData={formData}
       eventHandlers={eventHandlers}
       vizType={formData.vizType}
     />

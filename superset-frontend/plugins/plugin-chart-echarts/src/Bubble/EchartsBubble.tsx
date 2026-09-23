@@ -26,6 +26,7 @@ export default function EchartsBubble(props: BubbleChartTransformedProps) {
       height={height}
       width={width}
       echartOptions={echartOptions}
+      formData={formData}
       refs={refs}
       vizType={formData.vizType}
     />

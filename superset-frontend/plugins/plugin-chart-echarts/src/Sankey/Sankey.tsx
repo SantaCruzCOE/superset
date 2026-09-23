@@ -28,6 +28,7 @@ export default function Sankey(props: SankeyTransformedProps) {
       height={height}
       width={width}
       echartOptions={echartOptions}
+      formData={formData}
       vizType={formData.vizType}
     />
   );

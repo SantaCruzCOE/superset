@@ -209,6 +209,14 @@ function getLatestHeight() {
   return props.height;
 }
 
+test('passes saved text-scaling form data to the shared ECharts renderer', () => {
+  const formData = { ...defaultFormData, textScale: 150, axisLabelScale: 125 };
+  render(<EchartsTimeseries {...defaultProps} formData={formData} />);
+  expect(mockEchart).toHaveBeenCalledWith(
+    expect.objectContaining({ formData }),
+  );
+});
+
 test('observes extra control height changes when ResizeObserver is available', async () => {
   const disconnectSpy = jest.fn();
   const observeSpy = jest.fn();

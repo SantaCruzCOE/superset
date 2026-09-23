@@ -129,6 +129,80 @@ export const legendSection: ControlSetRow[] = [
   [legendSortControl],
 ];
 
+export const textSizingSection: ControlSetRow[] = [
+  [<ControlSubSectionHeader>{t('Text')}</ControlSubSectionHeader>],
+  [
+    {
+      name: 'textScale',
+      config: {
+        type: 'SliderControl',
+        label: t('Text scale (%)'),
+        renderTrigger: true,
+        min: 50,
+        max: 200,
+        step: 5,
+        default: 100,
+        description: t(
+          'Scales most ECharts text elements relative to defaults.',
+        ),
+      },
+    },
+  ],
+  [
+    {
+      name: 'legendTextScale',
+      config: {
+        type: 'SliderControl',
+        label: t('Legend text scale (%)'),
+        renderTrigger: true,
+        min: 50,
+        max: 200,
+        step: 5,
+        default: 100,
+        description: t(
+          'Additional scaling for legend text (where applicable).',
+        ),
+        visibility: ({ controls }: ControlPanelsContainerProps) =>
+          Boolean(controls?.show_legend?.value),
+      },
+    },
+  ],
+  [
+    {
+      name: 'axisLabelScale',
+      config: {
+        type: 'SliderControl',
+        label: t('Axis label scale (%)'),
+        renderTrigger: true,
+        min: 50,
+        max: 200,
+        step: 5,
+        default: 100,
+        description: t(
+          'Additional scaling for axis tick labels (where applicable).',
+        ),
+      },
+    },
+  ],
+  [
+    {
+      name: 'axisTitleScale',
+      config: {
+        type: 'SliderControl',
+        label: t('Axis title scale (%)'),
+        renderTrigger: true,
+        min: 50,
+        max: 200,
+        step: 5,
+        default: 100,
+        description: t(
+          'Additional scaling for axis titles (where applicable).',
+        ),
+      },
+    },
+  ],
+];
+
 export const showValueControl: ControlSetItem = {
   name: 'show_value',
   config: {

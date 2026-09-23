@@ -25,6 +25,7 @@ import {
 import { t } from '@apache-superset/core/translation';
 import { GenericDataType } from '@apache-superset/core/common';
 import {
+  textSizingSection,
   legendSection,
   showExtraControls,
   tooltipTimeFormatControl,
@@ -103,6 +104,7 @@ const config: ControlPanelConfig = {
       expanded: true,
       tabOverride: 'customize',
       controlSetRows: [
+        ...textSizingSection,
         ['color_scheme'],
         ...legendSection,
         ['zoomable'],

@@ -17,6 +17,7 @@
  * under the License.
  */
 import { t } from '@apache-superset/core/translation';
+import { textSizingSection } from '../controls';
 import { validateNonEmpty } from '@superset-ui/core';
 import {
   ControlPanelConfig,
@@ -68,7 +69,7 @@ const config: ControlPanelConfig = {
     {
       label: t('Chart Options'),
       expanded: true,
-      controlSetRows: [['color_scheme']],
+      controlSetRows: [...textSizingSection, ['color_scheme']],
     },
   ],
 };

@@ -50,6 +50,7 @@ export interface EchartsProps {
   height: number;
   width: number;
   echartOptions: EChartsCoreOption;
+  formData?: object;
   eventHandlers?: EventHandlers;
   zrEventHandlers?: EventHandlers;
   selectedValues?: Record<number, string>;

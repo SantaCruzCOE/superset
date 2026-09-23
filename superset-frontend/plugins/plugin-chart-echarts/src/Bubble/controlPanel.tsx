@@ -27,6 +27,7 @@ import {
 
 import { DEFAULT_FORM_DATA } from './constants';
 import {
+  textSizingSection,
   legendSection,
   truncateXAxis,
   xAxisBounds,
@@ -67,6 +68,7 @@ const config: ControlPanelConfig = {
       expanded: true,
       tabOverride: 'customize',
       controlSetRows: [
+        ...textSizingSection,
         ['color_scheme'],
         ...legendSection,
         [

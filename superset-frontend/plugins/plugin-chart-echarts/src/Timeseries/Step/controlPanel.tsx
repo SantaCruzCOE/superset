@@ -33,6 +33,7 @@ import {
 import { EchartsTimeseriesSeriesType } from '../../types';
 import { DEFAULT_FORM_DATA, TIME_SERIES_DESCRIPTION_TEXT } from '../constants';
 import {
+  textSizingSection,
   legendSection,
   minorTicks,
   richTooltipSection,
@@ -67,6 +68,7 @@ const config: ControlPanelConfig = {
       label: t('Chart Options'),
       expanded: true,
       controlSetRows: [
+        ...textSizingSection,
         ...seriesOrderSection,
         ['color_scheme'],
         ['time_shift_color'],

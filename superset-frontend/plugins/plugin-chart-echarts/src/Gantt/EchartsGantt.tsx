@@ -81,6 +81,7 @@ export default function EchartsGantt(props: EchartsGanttChartTransformedProps) {
         height={height - extraHeight}
         width={width}
         echartOptions={echartOptions}
+        formData={formData}
         selectedValues={selectedValues}
         eventHandlers={eventHandlers}
         vizType={formData.vizType}

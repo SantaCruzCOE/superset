@@ -212,6 +212,7 @@ export default function EchartsMixedTimeseries({
       height={height}
       width={width}
       echartOptions={echartOptions}
+      formData={formData}
       eventHandlers={eventHandlers}
       selectedValues={selectedValues}
       vizType={formData.vizType}

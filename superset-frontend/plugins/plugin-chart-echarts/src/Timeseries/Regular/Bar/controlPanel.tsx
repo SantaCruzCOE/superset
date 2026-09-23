@@ -38,6 +38,7 @@ import {
   sharedControls,
 } from '@superset-ui/chart-controls';
 import {
+  textSizingSection,
   legendSection,
   minorTicks,
   richTooltipSection,
@@ -355,6 +356,7 @@ const config: ControlPanelConfig = {
       label: t('Chart Options'),
       expanded: true,
       controlSetRows: [
+        ...textSizingSection,
         ...seriesOrderSection,
         ['color_scheme'],
         ['time_shift_color'],

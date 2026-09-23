@@ -368,6 +368,7 @@ export default function EchartsTimeseries({
         height={height - extraControlHeight}
         width={width}
         echartOptions={echartOptions}
+        formData={formData}
         eventHandlers={eventHandlers}
         zrEventHandlers={zrEventHandlers}
         selectedValues={selectedValues}
