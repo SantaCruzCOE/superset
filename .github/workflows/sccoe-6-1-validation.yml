@@ -69,7 +69,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/amd64 \
-            --target lean \
+            --target sccoe-lean \
             --load \
             --tag "sccoe-superset-lean:${GITHUB_SHA}" \
             .
@@ -78,5 +78,19 @@ jobs:
           image="sccoe-superset-lean:${GITHUB_SHA}"
           docker run --rm --entrypoint /usr/local/bin/uv "$image" \
             pip check --python /app/.venv/bin/python
-          docker run --rm --entrypoint /app/.venv/bin/python "$image" -c \
-            'import os, sys, superset; assert sys.version_info[:2] == (3, 12); assert os.geteuid() != 0'
+          docker run --rm --entrypoint /app/.venv/bin/python "$image" -c '
+          import os
+          import sys
+          import superset
+          import psycopg2
+          import redis
+          import shillelagh
+          import sqlalchemy_bigquery
+          import snowflake.sqlalchemy
+          from authlib.integrations.flask_client import OAuth
+          from google.cloud import bigquery
+          from superset.extensions import celery_app
+          from superset.tasks.cache import cache_warmup
+          assert sys.version_info[:2] == (3, 12)
+          assert os.geteuid() != 0
+          '

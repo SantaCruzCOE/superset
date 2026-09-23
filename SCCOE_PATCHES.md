@@ -27,7 +27,7 @@ not claim tag-signature provenance.
 The owner for each patch is the Santa Cruz COE Superset maintainers. These
 patches preserve saved chart form-data contracts; removing one requires evidence
 from an isolated metadata clone, not just a passing unit test. Commit hashes
-below identify local, unpublished commits on `sccoe/6.1`.
+below identify feature commits on `sccoe/6.1`.
 
 | Commit | User-facing purpose | Focused regression tests | Upstream replacement criterion |
 | --- | --- | --- | --- |
@@ -55,14 +55,35 @@ applicable. A source commit or test pass alone is not production parity.
 
 This patch inventory is not an image release. The fork Dockerfile selects
 Node `22.23.2` for the frontend stage (matching the declared `^22.22.0`
-engine) and Python `3.12.14` for the lean runtime. Superset 6.1 declares Python
-3.12 support, but the full source build, connector installation, `pip check`,
-runtime imports, and non-root startup have not yet been verified for this
-combination. The legacy configuration repository Dockerfile fetches a 6.0
+engine), Python `3.12.14` for the runtime, and `uv 0.12.12`. The public Node
+and Python base images are pinned to their OCI manifest-list digests, verified
+to include `linux/amd64` on September 23, 2026. Superset 6.1 declares Python
+3.12 support. The legacy configuration repository Dockerfile fetches a 6.0
 archive and overlays source files; it must not be used to build this fork.
 
 The credentials-free `SCCOE Superset 6.1 validation` workflow runs on pushes
-to `sccoe/6.1`. It tests the ECharts patch stack and builds the fork's lean
-`linux/amd64` image on a hosted runner. It neither publishes an image nor
-deploys a release. Passing this early gate does not validate production
-connectors, runtime configuration, or the metadata migration.
+to `sccoe/6.1`. It tests the ECharts patch stack and builds the fork's
+`sccoe-lean` `linux/amd64` image on a hosted runner. The added layer installs
+only the missing PostgreSQL, BigQuery, Snowflake, and OAuth packages from
+`requirements/sccoe-runtime.txt`, resolved against upstream's 6.1 base lock
+for Python 3.12 on Linux. The image job checks the dependency closure and
+imports the application, connectors, Celery app, and upstream cache task as a
+non-root user. It neither publishes an image nor deploys a release. Passing
+this gate does not validate the mounted runtime configuration, metadata
+migration, or live data-source credentials.
+
+To refresh the SCCOE-only lock from the fork root, resolve against upstream's
+pinned base versions while excluding its local editable `superset-core` entry:
+
+```bash
+uv pip compile --python-version 3.12 \
+  --python-platform x86_64-manylinux_2_17 \
+  --no-annotate --no-header \
+  --constraint <(rg -v '^-e ' requirements/base.txt) \
+  requirements/sccoe-runtime.in \
+  --output-file requirements/sccoe-runtime.txt
+```
+
+Review the complete lock diff and run the hosted `sccoe-lean` image check
+before accepting a refresh. The upstream base lock must not be silently
+upgraded to accommodate a connector.

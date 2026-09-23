@@ -18,7 +18,7 @@
 ######################################################################
 # Node stage to deal with static asset construction
 ######################################################################
-ARG PY_VER=3.12.14-slim-trixie
+ARG PY_VER=3.12.14-slim-trixie@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
 
 # If BUILDPLATFORM is null, set it to 'amd64' (or leave as is otherwise).
 ARG BUILDPLATFORM=${BUILDPLATFORM:-amd64}
@@ -29,7 +29,7 @@ ARG BUILD_TRANSLATIONS="false"
 ######################################################################
 # superset-node-ci used as a base for building frontend assets and CI
 ######################################################################
-FROM --platform=${BUILDPLATFORM} node:22.23.2-trixie-slim AS superset-node-ci
+FROM --platform=${BUILDPLATFORM} node:22.23.2-trixie-slim@sha256:c5849ff9c9ebcd66615412f0b548ca5b8ecaef84003dc9ac2e077ebe46aaa3f6 AS superset-node-ci
 ARG BUILD_TRANSLATIONS
 ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
 ARG DEV_MODE="false"           # Skip frontend build in dev mode
@@ -113,7 +113,7 @@ RUN useradd --user-group -d ${SUPERSET_HOME} -m --no-log-init --shell /bin/bash 
 # Some bash scripts needed throughout the layers
 COPY --chmod=755 docker/*.sh /app/docker/
 
-RUN pip install --no-cache-dir --upgrade uv
+RUN pip install --no-cache-dir uv==0.12.12
 
 # Using uv as it's faster/simpler than pip
 RUN uv venv /app/.venv
@@ -233,6 +233,19 @@ RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
 RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
     uv pip install -e .
 RUN python -m compileall /app/superset
+
+USER superset
+
+######################################################################
+# SCCOE production integrations, locked against the upstream base layer
+######################################################################
+FROM lean AS sccoe-lean
+USER root
+
+COPY requirements/sccoe-runtime.txt requirements/
+RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
+    uv pip install --no-deps -r requirements/sccoe-runtime.txt \
+    && uv pip check
 
 USER superset
 
