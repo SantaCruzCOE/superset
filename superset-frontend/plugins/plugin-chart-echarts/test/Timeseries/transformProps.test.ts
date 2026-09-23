@@ -38,6 +38,7 @@ import {
   EchartsTimeseriesSeriesType,
   OrientationType,
   EchartsTimeseriesFormData,
+  ValueLabelPosition,
   ValueLabelType,
 } from '../../src/Timeseries/types';
 import { StackControlsValue, TIMESERIES_CONSTANTS } from '../../src/constants';
@@ -809,6 +810,29 @@ describe('Does transformProps transform series correctly', () => {
         seriesIndex: 0,
       }),
     ).toBe('1');
+  });
+
+  test('passes the saved centered label position to bar series', () => {
+    const chartProps = createTestChartProps({
+      formData: {
+        ...formData,
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        stack: false,
+        valueLabelType: ValueLabelType.Value,
+        valueLabelPosition: ValueLabelPosition.Center,
+      },
+      queriesData,
+    });
+
+    const transformedSeries = transformProps(chartProps).echartOptions
+      .series as seriesType[];
+
+    expect(transformedSeries[0].label).toMatchObject({
+      show: true,
+      position: 'inside',
+      align: 'center',
+      verticalAlign: 'middle',
+    });
   });
 
   test('uses each x-axis stack total as the percentage denominator', () => {

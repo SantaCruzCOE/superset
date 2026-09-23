@@ -61,6 +61,7 @@ import {
   EchartsTimeseriesSeriesType,
   OrientationType,
   TimeseriesChartTransformedProps,
+  ValueLabelPosition,
   ValueLabelType,
 } from './types';
 import { DEFAULT_FORM_DATA } from './constants';
@@ -240,6 +241,7 @@ export default function transformProps(
     seriesType,
     showLegend,
     showValue,
+    valueLabelPosition,
     valueLabelType,
     colorByPrimaryAxis,
     sliceId,
@@ -282,6 +284,9 @@ export default function transformProps(
   const resolvedValueLabelType = isBar
     ? (valueLabelType ??
       (showValue ? ValueLabelType.Value : ValueLabelType.None))
+    : undefined;
+  const resolvedValueLabelPosition = isBar
+    ? (valueLabelPosition ?? ValueLabelPosition.End)
     : undefined;
   const resolvedShowValue = isBar
     ? resolvedValueLabelType !== ValueLabelType.None
@@ -564,6 +569,7 @@ export default function transformProps(
               labelMap?.[seriesName]?.[0],
             ) ?? defaultFormatter),
         showValue: resolvedShowValue,
+        valueLabelPosition: resolvedValueLabelPosition,
         valueLabelType: resolvedValueLabelType,
         percentFormatter: percentLabelFormatter,
         percentTotalValues,

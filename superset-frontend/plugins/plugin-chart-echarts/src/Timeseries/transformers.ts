@@ -54,6 +54,7 @@ import {
   LegendOrientation,
   OrientationType,
   StackType,
+  ValueLabelPosition,
   ValueLabelType,
 } from '../types';
 
@@ -212,6 +213,7 @@ export function transformSeries(
     stackIdSuffix?: string;
     yAxisIndex?: number;
     showValue?: boolean;
+    valueLabelPosition?: ValueLabelPosition;
     valueLabelType?: ValueLabelType;
     onlyTotal?: boolean;
     legendState?: LegendState;
@@ -249,6 +251,7 @@ export function transformSeries(
     stackIdSuffix,
     yAxisIndex = 0,
     showValue,
+    valueLabelPosition,
     valueLabelType,
     onlyTotal,
     formatter: valueFormatter,
@@ -374,6 +377,13 @@ export function transformSeries(
 
   const resolvedValueLabelType =
     valueLabelType ?? (showValue ? ValueLabelType.Value : ValueLabelType.None);
+  const isCenteredValueLabel =
+    plotType === 'bar' && valueLabelPosition === ValueLabelPosition.Center;
+  const valueLabelEchartsPosition = isCenteredValueLabel
+    ? 'inside'
+    : isHorizontal
+      ? 'right'
+      : 'top';
 
   const formatValueLabel = (value: number, dataIndex: number): string => {
     if (resolvedValueLabelType === ValueLabelType.None) {
@@ -414,7 +424,7 @@ export function transformSeries(
               isHorizontal,
             ),
           }
-        : seriesType === 'bar' && !stack
+        : seriesType === 'bar' && !stack && !isCenteredValueLabel
           ? { data: transformNegativeLabelsPosition(series, isHorizontal) }
           : null
       : null),
@@ -449,7 +459,13 @@ export function transformSeries(
     symbolSize: markerSize,
     label: {
       show: !!showValue,
-      position: isHorizontal ? 'right' : 'top',
+      position: valueLabelEchartsPosition,
+      ...(isCenteredValueLabel
+        ? {
+            align: 'center' as const,
+            verticalAlign: 'middle' as const,
+          }
+        : null),
       color: theme?.colorText,
       textBorderWidth: 0,
       formatter: (params: any) => {

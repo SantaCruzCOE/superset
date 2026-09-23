@@ -28,7 +28,7 @@ import {
   percentageThresholdControl,
   stackControlWithoutStream,
 } from '../../../controls';
-import { ValueLabelType } from '../../types';
+import { ValueLabelPosition, ValueLabelType } from '../../types';
 
 const valueLabelTypeControl: ControlSetItem = {
   name: 'value_label_type',
@@ -69,6 +69,23 @@ const valueLabelsAreEnabled = ({ controls }: ControlPanelsContainerProps) => {
   return valueLabelType !== undefined && valueLabelType !== ValueLabelType.None;
 };
 
+const valueLabelPositionControl: ControlSetItem = {
+  name: 'value_label_position',
+  config: {
+    type: 'SelectControl',
+    label: t('Value label position'),
+    renderTrigger: true,
+    clearable: false,
+    default: ValueLabelPosition.End,
+    description: t('Where to place the value labels'),
+    choices: [
+      [ValueLabelPosition.End, t('End')],
+      [ValueLabelPosition.Center, t('Centered')],
+    ],
+    visibility: valueLabelsAreEnabled,
+  },
+};
+
 const baseOnlyTotalControl = onlyTotalControl as CustomControlItem;
 const labelAwareOnlyTotalControl: ControlSetItem = {
   ...baseOnlyTotalControl,
@@ -94,6 +111,7 @@ const labelAwarePercentageThresholdControl: ControlSetItem = {
 
 export const valueLabelSection: ControlSetRow[] = [
   [valueLabelTypeControl],
+  [valueLabelPositionControl],
   [stackControlWithoutStream],
   [labelAwareOnlyTotalControl],
   [labelAwarePercentageThresholdControl],

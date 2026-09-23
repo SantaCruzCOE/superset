@@ -25,7 +25,11 @@ import {
 import { GenericDataType } from '@apache-superset/core/common';
 import { supersetTheme } from '@apache-superset/core/theme';
 import type { SeriesOption } from 'echarts';
-import { EchartsTimeseriesSeriesType, ValueLabelType } from '../../src';
+import {
+  EchartsTimeseriesSeriesType,
+  ValueLabelPosition,
+  ValueLabelType,
+} from '../../src';
 import { TIMESERIES_CONSTANTS } from '../../src/constants';
 import { LegendOrientation } from '../../src/types';
 import {
@@ -181,6 +185,47 @@ describe('transformSeries', () => {
     });
 
     expect(formatFirstLabel(result, { value: [5, 0] })).toBe('5 (25%)');
+  });
+
+  test.each([
+    [false, 'top'],
+    [true, 'right'],
+  ])(
+    'positions end labels by chart orientation (horizontal: %s)',
+    (isHorizontal, expectedPosition) => {
+      const result = createBarSeries({
+        valueLabelPosition: ValueLabelPosition.End,
+        isHorizontal,
+      });
+
+      expect(result.label.position).toBe(expectedPosition);
+      expect(result.label.align).toBeUndefined();
+      expect(result.label.verticalAlign).toBeUndefined();
+    },
+  );
+
+  test('centers labels and preserves negative bar data', () => {
+    const result = transformSeries(
+      { ...series, data: [[0, -5]] },
+      mockColorScale,
+      'test-key',
+      {
+        seriesType: EchartsTimeseriesSeriesType.Bar,
+        showValue: true,
+        valueLabelPosition: ValueLabelPosition.Center,
+        formatter: valueFormatter,
+        timeShiftColor: false,
+        stack: false,
+        isHorizontal: false,
+      },
+    ) as any;
+
+    expect(result.label).toMatchObject({
+      position: 'inside',
+      align: 'center',
+      verticalAlign: 'middle',
+    });
+    expect(Array.isArray(result.data[0])).toBe(true);
   });
 
   test('does not label hidden legend series or non-numeric values', () => {

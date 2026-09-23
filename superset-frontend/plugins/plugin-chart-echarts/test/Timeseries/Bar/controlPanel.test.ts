@@ -23,7 +23,11 @@ import {
   StackControlOptionsWithoutStream,
   StackControlsValue,
 } from '../../../src/constants';
-import { OrientationType, ValueLabelType } from '../../../src/Timeseries/types';
+import {
+  OrientationType,
+  ValueLabelPosition,
+  ValueLabelType,
+} from '../../../src/Timeseries/types';
 
 const config = controlPanel;
 
@@ -134,6 +138,7 @@ test('should include stack control in the panel', () => {
 
 describe('value label controls', () => {
   const valueLabelTypeControl: any = getControl('value_label_type');
+  const valueLabelPositionControl: any = getControl('value_label_position');
   const onlyTotalControl: any = getControl('only_total');
   const percentageThresholdControl: any = getControl('percentage_threshold');
 
@@ -169,6 +174,38 @@ describe('value label controls', () => {
     expect(
       valueLabelTypeControl.config.mapStateToProps({ form_data: formData }),
     ).toEqual({});
+  });
+
+  test('offers end and centered positions with end as the default', () => {
+    expect(valueLabelPositionControl).toBeDefined();
+    expect(valueLabelPositionControl.config.default).toBe(
+      ValueLabelPosition.End,
+    );
+    expect(
+      valueLabelPositionControl.config.choices.map(
+        ([value]: [ValueLabelPosition]) => value,
+      ),
+    ).toEqual([ValueLabelPosition.End, ValueLabelPosition.Center]);
+  });
+
+  test('shows the position control only when value labels are enabled', () => {
+    expect(
+      valueLabelPositionControl.config.visibility({
+        controls: {
+          value_label_type: { value: ValueLabelType.None },
+        },
+      }),
+    ).toBe(false);
+    expect(
+      valueLabelPositionControl.config.visibility({
+        controls: {
+          value_label_type: { value: ValueLabelType.Value },
+        },
+      }),
+    ).toBe(true);
+    expect(
+      valueLabelPositionControl.config.visibility({ controls: {} }),
+    ).toBe(false);
   });
 
   test('shows stacked-label controls only when labels are enabled', () => {
