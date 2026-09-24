@@ -19,6 +19,12 @@ under the License.
 
 # Superset
 
+> [!IMPORTANT]
+> This is the Santa Cruz COE source fork. Production SCCOE work targets the
+> `sccoe/6.1` branch, not the upstream-tracking `master` branch. Read
+> [SCCOE_MAINTAINERS.md](SCCOE_MAINTAINERS.md) before changing, validating, or
+> releasing SCCOE patches.
+
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/license/apache-2-0)
 [![Latest Release on Github](https://img.shields.io/github/v/release/apache/superset?sort=semver)](https://github.com/apache/superset/releases/latest)
 [![Build Status](https://github.com/apache/superset/actions/workflows/superset-python-unittest.yml/badge.svg)](https://github.com/apache/superset/actions)

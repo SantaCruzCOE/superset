@@ -61,8 +61,11 @@ to include `linux/amd64` on September 23, 2026. Superset 6.1 declares Python
 3.12 support. The legacy configuration repository Dockerfile fetches a 6.0
 archive and overlays source files; it must not be used to build this fork.
 
-The credentials-free `SCCOE Superset 6.1 validation` workflow runs on pushes
-to `sccoe/6.1`. It tests the ECharts patch stack and builds the fork's
+The credentials-free `SCCOE Superset 6.1 validation` workflow runs for pull
+requests targeting `sccoe/6.1`, pushes to that branch, and manual dispatches.
+Only a successful push run for the exact release-branch SHA satisfies the
+separate configuration repository's publisher. The workflow tests the ECharts
+patch stack and builds the fork's
 `sccoe-lean` `linux/amd64` image on a hosted runner. The added layer installs
 only the missing PostgreSQL, BigQuery, Snowflake, and OAuth packages from
 `requirements/sccoe-runtime.txt`, resolved against upstream's 6.1 base lock
@@ -87,3 +90,6 @@ uv pip compile --python-version 3.12 \
 Review the complete lock diff and run the hosted `sccoe-lean` image check
 before accepting a refresh. The upstream base lock must not be silently
 upgraded to accommodate a connector.
+
+The complete development, upstream-sync, and cross-repository release process
+is documented in `SCCOE_MAINTAINERS.md`.

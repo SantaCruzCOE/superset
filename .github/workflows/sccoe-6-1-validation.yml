@@ -18,9 +18,13 @@
 name: SCCOE Superset 6.1 validation
 
 on:
+  pull_request:
+    branches:
+      - sccoe/6.1
   push:
     branches:
       - sccoe/6.1
+  workflow_dispatch:
 
 permissions:
   contents: read
