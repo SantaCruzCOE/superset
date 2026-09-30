@@ -321,25 +321,33 @@ class TestGuestUserDatasourceAccess(SupersetTestCase):
                 }
             )
 
+    def _native_filter_request(self):
+        return Mock(
+            datasource=self.native_filter_datasource,
+            form_data={
+                "dashboardId": self.dash.id,
+                "native_filter_id": "NATIVE_FILTER-ABCDEFGH",
+                "type": "NATIVE_FILTER",
+                "slice_id": self.chart.id,
+                "metrics": self.chart.params_dict["metrics"],
+            },
+            slice_=self.chart,
+            queries=[],
+        )
+
     def test_raise_for_access__native_filter_happy_path(self):
         g.user = self.authorized_guest
-        for kwarg in ["viz", "query_context"]:
-            security_manager.raise_for_access(
-                **{
-                    kwarg: Mock(
-                        datasource=self.native_filter_datasource,
-                        form_data={
-                            "dashboardId": self.dash.id,
-                            "native_filter_id": "NATIVE_FILTER-ABCDEFGH",
-                            "type": "NATIVE_FILTER",
-                            "slice_id": self.chart.id,
-                            "metrics": self.chart.params_dict["metrics"],
-                        },
-                        slice_=self.chart,
-                        queries=[],
-                    )
-                }
-            )
+        security_manager.raise_for_access(query_context=self._native_filter_request())
+
+    def test_raise_for_access__native_filter_legacy_viz_refused(self):
+        """
+        SCCOE (SCCOE_PATCHES.md, payload pinning): native filters use the chart
+        data API; a legacy explore_json request must match its saved chart, so a
+        guest cannot use it to query another dataset.
+        """
+        g.user = self.authorized_guest
+        with self.assertRaises(SupersetSecurityException):  # noqa: PT027
+            security_manager.raise_for_access(viz=self._native_filter_request())
 
     def test_raise_for_access__no_dashboard_in_form_data(self):
         g.user = self.authorized_guest
@@ -356,25 +364,27 @@ class TestGuestUserDatasourceAccess(SupersetTestCase):
                     }
                 )
 
-    def test_raise_for_access__drill_to_detail_happy_path(self):
+    def test_raise_for_access__drill_to_detail_refused_for_guests(self):
         """
-        Drill to Detail: no slice_id in form_data, datasource is on the dashboard
-        the embedded user has access to.
+        SCCOE (SCCOE_PATCHES.md, payload pinning): Drill to Detail returns raw
+        rows, so embedded guests may not run requests without a saved chart,
+        even for a datasource on their dashboard.
         """
         g.user = self.authorized_guest
         for kwarg in ["viz", "query_context"]:
-            security_manager.raise_for_access(
-                **{
-                    kwarg: Mock(
-                        datasource=self.datasource,
-                        form_data={
-                            "dashboardId": self.dash.id,
-                        },
-                        slice_=None,
-                        queries=[],
-                    )
-                }
-            )
+            with self.assertRaises(SupersetSecurityException):  # noqa: PT027
+                security_manager.raise_for_access(
+                    **{
+                        kwarg: Mock(
+                            datasource=self.datasource,
+                            form_data={
+                                "dashboardId": self.dash.id,
+                            },
+                            slice_=None,
+                            queries=[],
+                        )
+                    }
+                )
 
     def test_raise_for_access__drill_to_detail_datasource_not_on_dashboard(self):
         """
@@ -397,29 +407,29 @@ class TestGuestUserDatasourceAccess(SupersetTestCase):
                     }
                 )
 
-    def test_raise_for_access__drill_by_happy_path(self):
+    def test_raise_for_access__drill_by_refused_for_guests(self):
         """
-        Drill By: slice_id=0 (sentinel), chart_id points to a chart on the dashboard
-        whose datasource matches, the requested groupby column is drillable and the
-        embedded user has access to.
+        SCCOE (SCCOE_PATCHES.md, payload pinning): Drill By groups a chart by a
+        column it was not saved with, so embedded guests may not run it.
         """
         g.user = self.authorized_guest
         for kwarg in ["viz", "query_context"]:
-            security_manager.raise_for_access(
-                **{
-                    kwarg: Mock(
-                        datasource=self.datasource,
-                        form_data={
-                            "dashboardId": self.dash.id,
-                            "slice_id": 0,
-                            "chart_id": self.chart.id,
-                            "groupby": ["gender"],
-                        },
-                        slice_=None,
-                        queries=[],
-                    )
-                }
-            )
+            with self.assertRaises(SupersetSecurityException):  # noqa: PT027
+                security_manager.raise_for_access(
+                    **{
+                        kwarg: Mock(
+                            datasource=self.datasource,
+                            form_data={
+                                "dashboardId": self.dash.id,
+                                "slice_id": 0,
+                                "chart_id": self.chart.id,
+                                "groupby": ["gender"],
+                            },
+                            slice_=None,
+                            queries=[],
+                        )
+                    }
+                )
 
     def test_raise_for_access__drill_by_chart_not_on_dashboard(self):
         """

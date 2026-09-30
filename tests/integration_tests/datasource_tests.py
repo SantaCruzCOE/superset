@@ -531,8 +531,8 @@ class TestDatasource(SupersetTestCase):
         self, mock_has_guest_access, mock_is_guest_user, mock_rls
     ):
         """
-        Embedded guest user can access /samples (for D2D) via the dashboard context
-        passed as form_data to QueryContextFactory.
+        SCCOE (SCCOE_PATCHES.md, payload pinning): embedded guests may not fetch
+        /samples (raw rows for Drill to Detail), even with the dashboard context.
         """
         # Gamma role doesn't have dataset access (mimic embedded role),
         # but needs access to the /samples endpoint
@@ -548,7 +548,7 @@ class TestDatasource(SupersetTestCase):
         try:
             uri = f"/datasource/samples?datasource_id={tbl.id}&datasource_type=table&dashboard_id={dash.id}"  # noqa: E501
             resp = self.client.post(uri, json={})
-            assert resp.status_code == 200
+            assert resp.status_code == 403
         finally:
             sm.del_permission_role(gamma_role, perm_view)
 
