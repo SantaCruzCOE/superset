@@ -100,3 +100,19 @@ jobs:
           assert os.geteuid() != 0
           assert "cache-warmup" in worker_app.tasks
           '
+      - name: Security and query-context unit tests
+        # Runs the backend suites that guard embedded and anonymous dashboard
+        # access (SCCOE payload pinning) against the image just built. Test
+        # tools are installed into a disposable container, never the image.
+        run: |
+          image="sccoe-superset-lean:${GITHUB_SHA}"
+          docker run --rm --user 0 \
+            --env SUPERSET_TESTENV=true \
+            --volume "${GITHUB_WORKSPACE}/tests:/app/tests:ro" \
+            --workdir /app \
+            --entrypoint sh "$image" -ec '
+            /usr/local/bin/uv pip install --python /app/.venv/bin/python \
+              pytest==7.4.4 pytest-mock==3.10.0 freezegun==1.5.1 pyfakefs==5.3.5
+            /app/.venv/bin/python -m pytest -q -p no:cacheprovider \
+              tests/unit_tests/security tests/unit_tests/common
+            '

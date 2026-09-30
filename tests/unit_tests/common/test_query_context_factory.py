@@ -265,7 +265,7 @@ class TestQueryContextFactory:
 
         result = self.factory._get_slice(slice_id)
 
-        mock_dao.find_by_id.assert_called_once_with(slice_id)
+        mock_dao.find_by_id.assert_called_once_with(slice_id, skip_base_filter=True)
         assert result == mock_slice
 
     @patch("superset.common.query_context_factory.ChartDAO")
@@ -276,7 +276,7 @@ class TestQueryContextFactory:
 
         result = self.factory._get_slice(slice_id)
 
-        mock_dao.find_by_id.assert_called_once_with(slice_id)
+        mock_dao.find_by_id.assert_called_once_with(slice_id, skip_base_filter=True)
         assert result is None
 
     def test_apply_granularity_with_x_axis(self):

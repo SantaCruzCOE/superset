@@ -198,19 +198,117 @@ def freeze_value(value: Any) -> str:
     return json.dumps(value, sort_keys=True)
 
 
-def query_context_modified(query_context: "QueryContext") -> bool:
+def _native_filter_config(
+    dashboard: "Dashboard", native_filter_id: Any
+) -> Optional[dict[str, Any]]:
+    """Return a dashboard's native filter configuration by id."""
+    json_metadata = json.loads(dashboard.json_metadata or "{}")
+    return next(
+        (
+            fltr
+            for fltr in json_metadata.get("native_filter_configuration", [])
+            if fltr.get("id") == native_filter_id
+        ),
+        None,
+    )
+
+
+def _native_filter_query_allowed(
+    query: Any, targets: set[str], sort_metric: Optional[str]
+) -> bool:
+    """
+    Whether one native filter query stays within its filter: target columns,
+    `MIN`/`MAX` of a target column (range filters), or the sort metric.
+    """
+
+    def allowed_metric(metric: Any) -> bool:
+        if isinstance(metric, str):
+            return sort_metric is not None and metric == sort_metric
+        return (
+            isinstance(metric, dict)
+            and metric.get("expressionType") == "SIMPLE"
+            and metric.get("aggregate") in {"MIN", "MAX"}
+            and (metric.get("column") or {}).get("column_name") in targets
+        )
+
+    def allowed_order(item: Any) -> bool:
+        key = item[0] if isinstance(item, (list, tuple)) and item else None
+        return (isinstance(key, str) and key in targets) or allowed_metric(key)
+
+    return (
+        all(
+            isinstance(column, str) and column in targets
+            for column in getattr(query, "columns", None) or []
+        )
+        and all(
+            allowed_metric(metric) for metric in getattr(query, "metrics", None) or []
+        )
+        and all(allowed_order(item) for item in getattr(query, "orderby", None) or [])
+    )
+
+
+def native_filter_query_modified(
+    query_context: "QueryContext",
+    dashboard: "Dashboard",
+) -> bool:
+    """
+    Check if a native filter request asks for more than its filter needs.
+
+    A native filter may query only its own target columns, `MIN`/`MAX` of those
+    columns (range filters), and its configured sort metric (select filters).
+    Anything else could return arbitrary columns from the dashboard dataset.
+    """
+    form_data = query_context.form_data or {}
+    native_filter = _native_filter_config(dashboard, form_data.get("native_filter_id"))
+    if native_filter is None:
+        return True
+
+    targets = {
+        target["column"]["name"]
+        for target in native_filter.get("targets", [])
+        if isinstance(target.get("column"), dict) and target["column"].get("name")
+    }
+    sort_metric = (native_filter.get("controlValues") or {}).get("sortMetric")
+    return not all(
+        _native_filter_query_allowed(query, targets, sort_metric)
+        for query in query_context.queries
+    )
+
+
+def _chartless_query_modified(
+    query_context: "QueryContext",
+    dashboard: Optional["Dashboard"],
+) -> bool:
+    """
+    A request without a saved chart is modified unless it is a native filter
+    request that stays within its filter's configuration on the dashboard.
+    """
+    form_data = query_context.form_data
+    if form_data and form_data.get("type") == "NATIVE_FILTER" and dashboard:
+        return native_filter_query_modified(query_context, dashboard)
+    return True
+
+
+def query_context_modified(
+    query_context: "QueryContext",
+    dashboard: Optional["Dashboard"] = None,
+) -> bool:
     """
     Check if a query context has been modified.
 
     This is used to ensure guest users don't modify the payload and fetch data
-    different from what was shared with them in dashboards.
+    different from what was shared with them in dashboards. A request without a
+    saved chart is treated as modified unless it is a native filter request that
+    stays within its filter's configuration on the given dashboard.
     """
     form_data = query_context.form_data
     stored_chart = query_context.slice_
 
-    # native filter requests
-    if form_data is None or stored_chart is None:
-        return False
+    if stored_chart is None:
+        return _chartless_query_modified(query_context, dashboard)
+
+    if form_data is None:
+        return True
 
     # cannot request a different chart
     if form_data.get("slice_id") != stored_chart.id:
@@ -252,6 +350,75 @@ def query_context_modified(query_context: "QueryContext") -> bool:
         if not queries_values.issubset(stored_values):
             return True
 
+    return False
+
+
+# Form data keys that choose which columns or metrics a legacy (explore_json)
+# visualization reads. A restricted user may narrow these but not change them.
+LEGACY_QUERY_SHAPING_KEYS = (
+    "all_columns",
+    "all_columns_x",
+    "all_columns_y",
+    "column",
+    "columns",
+    "dimension",
+    "entity",
+    "end_spatial",
+    "geojson",
+    "groupby",
+    "js_columns",
+    "line_column",
+    "metric",
+    "metric_2",
+    "metrics",
+    "order_by_cols",
+    "percent_metrics",
+    "secondary_metric",
+    "series",
+    "size",
+    "spatial",
+    "start_spatial",
+    "timeseries_limit_metric",
+    "x",
+    "y",
+)
+
+
+def legacy_viz_modified(viz: "BaseViz") -> bool:
+    """
+    Check if a legacy (explore_json) visualization request differs from the
+    saved chart it claims to be.
+
+    List values may be a subset of the saved list; other values must match.
+    """
+    # pylint: disable=import-outside-toplevel
+    from superset import db
+    from superset.models.slice import Slice
+
+    form_data = viz.form_data or {}
+    slice_id = form_data.get("slice_id")
+    stored_chart = (
+        db.session.query(Slice).filter(Slice.id == slice_id).one_or_none()
+        if slice_id
+        else None
+    )
+    if stored_chart is None or stored_chart.datasource_id != viz.datasource.id:
+        return True
+
+    stored_params = stored_chart.params_dict
+    for key in LEGACY_QUERY_SHAPING_KEYS:
+        requested = form_data.get(key)
+        if requested in (None, "", []):
+            continue
+        stored = stored_params.get(key)
+        if isinstance(requested, list):
+            stored_list = stored if isinstance(stored, list) else [stored]
+            if not {freeze_value(value) for value in requested}.issubset(
+                {freeze_value(value) for value in stored_list}
+            ):
+                return True
+        elif freeze_value(requested) != freeze_value(stored):
+            return True
     return False
 
 
@@ -2560,12 +2727,17 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
                     self.get_table_access_error_object(denied)
                 )
 
-        # Guest users MUST not modify the payload so it's requesting a
-        # different chart or different ad-hoc metrics from what's saved.
-        if (
-            query_context
-            and self.is_guest_user()
-            and query_context_modified(query_context)
+        # Guest and anonymous users MUST not modify the payload so it's requesting
+        # a different chart or different ad-hoc metrics from what's saved.
+        if self.is_payload_restricted_user() and (
+            (
+                query_context
+                and query_context_modified(
+                    query_context,
+                    self._get_form_data_dashboard(query_context.form_data),
+                )
+            )
+            or (viz and legacy_viz_modified(viz))
         ):
             raise SupersetSecurityException(
                 SupersetError(
@@ -3099,6 +3271,37 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
 
     def get_current_guest_user_if_guest(self) -> Optional[GuestUser]:
         return g.user if self.is_guest_user() else None
+
+    def is_payload_restricted_user(self) -> bool:
+        """
+        Whether the current user may only run the queries of saved dashboard
+        charts and native filters: embedded guests and anonymous (Public) users.
+
+        These users reach datasets only through dashboards, so letting them
+        change a chart's columns or metrics would expose the whole dataset.
+        """
+        if self.is_guest_user():
+            return True
+        user = getattr(g, "user", None)
+        return bool(user is not None and user.is_anonymous)
+
+    @staticmethod
+    def _get_form_data_dashboard(
+        form_data: Optional[dict[str, Any]],
+    ) -> Optional["Dashboard"]:
+        """Return the dashboard a chart data request names, if any."""
+        # pylint: disable=import-outside-toplevel
+        from superset import db
+        from superset.models.dashboard import Dashboard
+
+        dashboard_id = (form_data or {}).get("dashboardId")
+        if not dashboard_id:
+            return None
+        return (
+            db.session.query(Dashboard)
+            .filter(Dashboard.id == dashboard_id)
+            .one_or_none()
+        )
 
     def has_guest_access(self, dashboard: "Dashboard") -> bool:
         user = self.get_current_guest_user_if_guest()

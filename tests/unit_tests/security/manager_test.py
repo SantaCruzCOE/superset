@@ -660,12 +660,16 @@ def test_query_context_modified_native_filter(mocker: MockerFixture) -> None:
     """
     Test the `query_context_modified` function with a native filter request.
 
-    A native filter request has no chart (slice) associated with it.
+    A native filter request has no chart (slice) associated with it. Without the
+    dashboard that defines the filter it cannot be validated, so it is treated as
+    modified; `payload_pinning_test.py` covers requests validated against their
+    filter configuration.
     """
     query_context = mocker.MagicMock()
     query_context.slice_ = None
+    query_context.form_data = {"type": "NATIVE_FILTER"}
 
-    assert not query_context_modified(query_context)
+    assert query_context_modified(query_context)
 
 
 def test_query_context_modified_mixed_chart(mocker: MockerFixture) -> None:

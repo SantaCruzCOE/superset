@@ -112,7 +112,11 @@ class QueryContextFactory:  # pylint: disable=too-few-public-methods
         )
 
     def _get_slice(self, slice_id: Any) -> Slice | None:
-        return ChartDAO.find_by_id(slice_id)
+        # The saved chart only validates the request payload and supplies the
+        # cache timeout; access is authorized separately by raise_for_access.
+        # The chart base filter would hide the chart from embedded guests and
+        # anonymous users, which silently disabled the payload check for them.
+        return ChartDAO.find_by_id(slice_id, skip_base_filter=True)
 
     def _process_query_object(
         self,
