@@ -39,9 +39,10 @@ below identify feature commits on `sccoe/6.1`.
 | `f3b897c7b8` | Preserve responsive horizontal category labels, wrapping, ellipsis, and plot balance. | `test/Timeseries/Bar/responsiveAxisLabels.test.ts`, `test/axisLabelLayoutControls.test.tsx`, `test/utils/responsiveAxisLabels.test.ts`. | Upstream preserves both saved layout keys and equivalent narrow/wide rendering without changing legacy mode. |
 | `fd6ffff507` | Preserve explicit categorical ordering via `x_axis_custom_order`. | `test/Timeseries/categoryOrdering.test.ts`, `test/categoryOrderControl.test.ts`, `test/utils/categoryOrdering.test.ts`. | Upstream supports the exact saved order contract and handles unknown, repeated, and punctuated labels alongside its `x_axis_sort` fields. |
 | `6f401096b3` | Remove Sunburst outlines from explicit filtered-node labels; retain Histogram and Sunburst theme-merge regression coverage. | `test/Sunburst/readability.test.ts`, `test/Histogram/readability.test.ts`. | Upstream renders filtered Sunburst labels without the outline and the configuration repository's light/dark chart-specific overrides remain effective. |
+| `bc3956bc6c` | Pin embedded-guest and anonymous (Public) queries to saved dashboard charts: find the saved chart without the chart base filter, apply the payload check to anonymous users, refuse chart-less requests except native filters limited to their own configuration, and check legacy explore_json form data. Required by the Data Portal's district-masked embeds. | `tests/unit_tests/security/payload_pinning_test.py`, `tests/unit_tests/security/manager_test.py`, `tests/unit_tests/common/test_query_context_factory.py` (backend paths from the repository root; run in CI inside the lean image) | Upstream enforces the same pinning for guests and anonymous users, including chart-less and native filter requests, and the configuration repository's guest-token harness passes with `--with-fork-patch` removed. |
 
-All relative test paths in the table begin at
-`superset-frontend/plugins/plugin-chart-echarts/`. The corresponding light and
+Relative frontend test paths in the table begin at
+`superset-frontend/plugins/plugin-chart-echarts/`; backend paths are marked. The corresponding light and
 dark Sunburst/Histogram theme overrides live in the separate `superset-config`
 repository's `superset_config.py` (`ba8d78a`). The unused category-order-column
 control was intentionally not ported.
@@ -65,7 +66,8 @@ The credentials-free `SCCOE Superset 6.1 validation` workflow runs for pull
 requests targeting `sccoe/6.1`, pushes to that branch, and manual dispatches.
 Only a successful push run for the exact release-branch SHA satisfies the
 separate configuration repository's publisher. The workflow tests the ECharts
-patch stack and builds the fork's
+patch stack, runs the backend security and query-context unit suites inside
+the lean image, and builds the fork's
 `sccoe-lean` `linux/amd64` image on a hosted runner. The added layer installs
 only the missing PostgreSQL, BigQuery, Snowflake, and OAuth packages from
 `requirements/sccoe-runtime.txt`, resolved against upstream's 6.1 base lock
