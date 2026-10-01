@@ -67,11 +67,12 @@ Only a successful push run for the exact release-branch SHA satisfies the
 separate configuration repository's publisher. The workflow tests the ECharts
 patch stack and builds the fork's
 `sccoe-lean` `linux/amd64` image on a hosted runner. The added layer installs
-only the missing PostgreSQL, BigQuery, Snowflake, and OAuth packages from
+only the missing PostgreSQL, BigQuery, Snowflake, OAuth, and MCP server
+(`fastmcp`) packages from
 `requirements/sccoe-runtime.txt`, resolved against upstream's 6.1 base lock
 for Python 3.12 on Linux. The image job checks the dependency closure and
-imports the application, connectors, Celery app, and upstream cache task as a
-non-root user. It neither publishes an image nor deploys a release. Passing
+imports the application, connectors, Celery app, upstream cache task, and MCP
+server as a non-root user. It neither publishes an image nor deploys a release. Passing
 this gate does not validate the mounted runtime configuration, metadata
 migration, or live data-source credentials.
 
@@ -86,6 +87,12 @@ uv pip compile --python-version 3.12 \
   requirements/sccoe-runtime.in \
   --output-file requirements/sccoe-runtime.txt
 ```
+
+That command re-resolves every package. To add or change one integration
+without moving the others, also pass the current lock as a constraint
+(`--constraint` a copy of `requirements/sccoe-runtime.txt`). For `fastmcp`,
+constrain its dependencies to the versions in upstream's
+`requirements/development.txt`, which is what Superset 6.1 was tested with.
 
 Review the complete lock diff and run the hosted `sccoe-lean` image check
 before accepting a refresh. The upstream base lock must not be silently

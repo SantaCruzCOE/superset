@@ -20,7 +20,11 @@
 # already supplies Google Sheets, Redis, PyArrow, and cryptography. Keep this
 # layer small and resolve it against requirements/base.txt for Python 3.12 on
 # the linux/amd64 target before updating the compiled runtime lock.
+#
+# fastmcp serves the `superset mcp run` agent server. Its version and its
+# dependencies follow upstream's tested requirements/development.txt.
 authlib==1.6.7
+fastmcp==3.1.0
 google-cloud-bigquery==3.27.0
 psycopg2-binary==2.9.9
 snowflake-connector-python==4.3.0
