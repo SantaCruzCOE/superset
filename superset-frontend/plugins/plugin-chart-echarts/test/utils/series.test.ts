@@ -710,15 +710,12 @@ describe('extractSeries', () => {
   });
 
   test('preserves expanded raw values when transposing horizontal bars', () => {
-    const [series] = extractSeries(
-      [{ x: 'A', apples: 3, pears: 1 }],
-      {
-        xAxis: 'x',
-        stack: StackControlsValue.Expand,
-        totalStackedValues: [4],
-        isHorizontal: true,
-      },
-    );
+    const [series] = extractSeries([{ x: 'A', apples: 3, pears: 1 }], {
+      xAxis: 'x',
+      stack: StackControlsValue.Expand,
+      totalStackedValues: [4],
+      isHorizontal: true,
+    });
 
     expect(series).toEqual([
       {

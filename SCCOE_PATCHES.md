@@ -55,11 +55,20 @@ applicable. A source commit or test pass alone is not production parity.
 
 This patch inventory is not an image release. The fork Dockerfile selects
 Node `22.23.2` for the frontend stage (matching the declared `^22.22.0`
-engine), Python `3.12.14` for the runtime, and `uv 0.12.12`. The public Node
-and Python base images are pinned to their OCI manifest-list digests, verified
-to include `linux/amd64` on September 23, 2026. Superset 6.1 declares Python
-3.12 support. The legacy configuration repository Dockerfile fetches a 6.0
-archive and overlays source files; it must not be used to build this fork.
+engine), Python `3.12.15` for the runtime, and `uv 0.13.5`. The public Node,
+Python, and uv images are pinned to their OCI manifest-list digests. Superset
+6.1 declares Python 3.12 support. The legacy configuration repository
+Dockerfile fetches a 6.0 archive and overlays source files; it must not be used
+to build this fork.
+
+The runtime dependency locks require `certifi 2026.10.19`, and the system
+bootstrap requires `pip 26.2.2`. Together with `uv 0.13.5`, these are the
+patched minimums published for the October 2026 eMudhra/emSign certificate
+authority incident. The pip wheel is installed by patched uv from an explicit
+PyPI URL with its SHA-256 hash, avoiding an unhashed network resolution through
+the base image's older pip. The SCCOE image validation job asserts all three
+versions from the built image so a future base-image or lock refresh cannot
+silently regress the remediation.
 
 The credentials-free `SCCOE Superset 6.1 validation` workflow runs for pull
 requests targeting `sccoe/6.1`, pushes to that branch, and manual dispatches.

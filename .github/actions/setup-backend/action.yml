@@ -45,7 +45,13 @@ runs:
         if [ "${{ inputs.install-superset }}" = "true" ]; then
           sudo apt-get update && sudo apt-get -y install libldap2-dev libsasl2-dev
 
-          pip install --upgrade pip setuptools wheel uv
+          # Bootstrap patched pip from a hash-pinned wheel before performing any
+          # unconstrained package resolution through the runner trust store.
+          python -m pip install --no-cache-dir \
+            "pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70"
+          python -m pip install --no-cache-dir --upgrade setuptools wheel "uv==0.13.5"
+          python -c 'import pip; assert pip.__version__ == "26.2.2"'
+          test "$(uv --version)" = "uv 0.13.5"
 
           if [ "${{ inputs.requirements-type }}" = "dev" ]; then
             uv pip install --system -r requirements/development.txt

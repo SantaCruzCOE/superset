@@ -31,7 +31,12 @@ if [ -z "$RUNNING_IN_DOCKER" ]; then
     -w /app \
     -e RUNNING_IN_DOCKER=1 \
     python:${PYTHON_VERSION}-slim \
-    bash -c "pip install uv && ./scripts/uv-pip-compile.sh $*"
+    bash -c \
+      'python -m pip install --no-cache-dir \
+        "pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70" &&
+       python -m pip install --no-cache-dir "uv==0.13.5" &&
+       ./scripts/uv-pip-compile.sh "$@"' \
+      -- "$@"
 
   exit $?
 fi
