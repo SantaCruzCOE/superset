@@ -31,7 +31,7 @@
 
 [build.environment]
   # Node version matching docs/.nvmrc
-  NODE_VERSION = "20"
+  NODE_VERSION = "22.23.4"
   # Yarn version
   YARN_VERSION = "1.22.22"
   # Increase heap size for webpack bundling of Superset UI components

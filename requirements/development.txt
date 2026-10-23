@@ -112,7 +112,7 @@ celery==5.5.2
     # via
     #   -c requirements/base-constraint.txt
     #   apache-superset
-certifi==2025.6.15
+certifi==2026.10.19
     # via
     #   -c requirements/base-constraint.txt
     #   httpcore
@@ -660,8 +660,10 @@ pillow==11.3.0
     #   -c requirements/base-constraint.txt
     #   apache-superset
     #   matplotlib
-pip==25.1.1
-    # via apache-superset
+pip==26.2.2
+    # via
+    #   -r requirements/development.in
+    #   apache-superset
 platformdirs==4.3.8
     # via
     #   -c requirements/base-constraint.txt

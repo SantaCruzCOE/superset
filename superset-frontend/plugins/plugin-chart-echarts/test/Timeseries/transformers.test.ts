@@ -30,10 +30,7 @@ import {
   ValueLabelPosition,
   ValueLabelType,
 } from '../../src';
-import {
-  StackControlsValue,
-  TIMESERIES_CONSTANTS,
-} from '../../src/constants';
+import { StackControlsValue, TIMESERIES_CONSTANTS } from '../../src/constants';
 import { LegendOrientation } from '../../src/types';
 import {
   transformSeries,

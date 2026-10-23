@@ -19,9 +19,7 @@
 import { ControlPanelsContainerProps } from '@superset-ui/chart-controls/types';
 import { GenericDataType } from '@apache-superset/core/common';
 import controlPanel from '../../../src/Timeseries/Regular/Bar/controlPanel';
-import {
-  StackControlsValue,
-} from '../../../src/constants';
+import { StackControlsValue } from '../../../src/constants';
 import {
   OrientationType,
   ValueLabelPosition,
@@ -202,9 +200,9 @@ describe('value label controls', () => {
         },
       }),
     ).toBe(true);
-    expect(
-      valueLabelPositionControl.config.visibility({ controls: {} }),
-    ).toBe(false);
+    expect(valueLabelPositionControl.config.visibility({ controls: {} })).toBe(
+      false,
+    );
   });
 
   test('shows stacked-label controls only when labels are enabled', () => {
@@ -245,9 +243,9 @@ test('should include None, Stack, and Expand stack options', () => {
   const stackControl: any = getControl('stack');
   expect(stackControl).toBeDefined();
   expect(stackControl.config).toBeDefined();
-  expect(stackControl.config.choices.map(([value]: [unknown]) => value)).toEqual(
-    [null, StackControlsValue.Stack, StackControlsValue.Expand],
-  );
+  expect(
+    stackControl.config.choices.map(([value]: [unknown]) => value),
+  ).toEqual([null, StackControlsValue.Stack, StackControlsValue.Expand]);
 });
 
 test('should not include Stream option in stack control choices', () => {
