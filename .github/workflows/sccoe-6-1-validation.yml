@@ -47,9 +47,10 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
-          node-version: 22.23.2
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: superset-frontend/package-lock.json
+      - run: test "$(node --version)" = "v22.23.4"
       - run: npm ci
       - name: ECharts regression tests
         env:
@@ -80,7 +81,7 @@ jobs:
       - name: Check dependencies and non-root runtime
         run: |
           image="sccoe-superset-lean:${GITHUB_SHA}"
-          test "$(docker run --rm --entrypoint /usr/local/bin/uv "$image" --version)" = "uv 0.13.5"
+          [[ "$(docker run --rm --entrypoint /usr/local/bin/uv "$image" --version)" == "uv 0.13.5"* ]]
           docker run --rm --entrypoint /usr/local/bin/python "$image" -c '
           import pip
           assert pip.__version__ == "26.2.2"

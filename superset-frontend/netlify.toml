@@ -27,4 +27,4 @@
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- src/ packages/ plugins/ .storybook/ package.json yarn.lock"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22.23.4"
