@@ -26,7 +26,7 @@ if [ -z "$RUNNING_IN_DOCKER" ]; then
 
   echo "Running in Docker (Python ${PYTHON_VERSION} on Linux)..."
 
-  docker run --rm \
+  docker run --rm --platform linux/amd64 \
     -v "$(pwd)":/app \
     -w /app \
     -e RUNNING_IN_DOCKER=1 \
