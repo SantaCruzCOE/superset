@@ -6,9 +6,9 @@ inputs:
     required: true
     default: 'current'
   cache:
-    description: 'Cache dependencies. Options: pip'
+    description: 'Optional dependency cache passed to actions/setup-python. Options: pip'
     required: false
-    default: 'pip'
+    default: ''
   requirements-type:
     description: 'Type of requirements to install. Options: base, development, default'
     required: false
